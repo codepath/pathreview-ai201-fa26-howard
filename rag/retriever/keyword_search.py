@@ -22,6 +22,11 @@ class KeywordSearcher:
         """
         self.chunks = chunks
         tokenized_corpus = [self._tokenize(chunk["text"]) for chunk in chunks]
+
+        if not tokenized_corpus:
+            self.bm25 = None
+            return
+
         self.bm25 = BM25Okapi(tokenized_corpus)
         logger.info("keyword_index_built", chunk_count=len(chunks))
 
