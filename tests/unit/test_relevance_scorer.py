@@ -60,7 +60,7 @@ class TestRelevanceScorer:
     def test_empty_chunks_list_returns_zero(self, scorer):
         """Test empty chunks list returns 0.0."""
         query = "Some query"
-        chunks = []
+        chunks: list[dict] = []
 
         score = scorer.score(query, chunks)
 

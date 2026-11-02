@@ -38,9 +38,9 @@ Install Docker Engine and the Docker Compose plugin (not the standalone `docker-
 
 ```bash
 # 1. Clone your fork
-git clone https://github.com/<your-username>/pathreview.git
-cd pathreview
-git remote add upstream https://github.com/codepath/pathreview.git
+git clone https://github.com/<your-username>/pathreview-ai201-fa26-howard.git
+cd pathreview-ai201-fa26-howard
+git remote add upstream https://github.com/codepath/pathreview-ai201-fa26-howard.git
 
 # 2. Configure environment
 cp .env.example .env
