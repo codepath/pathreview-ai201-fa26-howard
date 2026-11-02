@@ -17,9 +17,9 @@ PathReview analyzes GitHub profiles, resumes, and project repositories to genera
 > **Windows users:** Use [Git Bash](https://git-scm.com/download/win) to run these commands, not PowerShell. See [docs/SETUP.md](docs/SETUP.md) for Windows-specific setup including installing `make`.
 
 ```bash
-# Clone and enter the repo
-git clone https://github.com/codepath/pathreview.git
-cd pathreview
+# Fork this repo on GitHub, then clone your fork and enter it
+git clone https://github.com/<your-username>/pathreview-ai201-fa26-howard.git
+cd pathreview-ai201-fa26-howard
 
 # Configure environment (add your OPENROUTER_API_KEY to .env)
 cp .env.example .env
