@@ -23,13 +23,13 @@ pipeline and checks that the returned `chunk_count` is correct.
 
 **Setup confirmation:** [x] App runs locally at localhost:5173
 
-**Cohort ledger:** [ ] Issue added to cohort ledger
+**Cohort ledger:** [x] Issue added to cohort ledger
 
 ### Selection notes: "Is this issue right for me?"
 
 **Part 1: Understanding the issue**
 
-- [ ] I can explain the problem and the expected behavior in 2–3 sentences
+- [x] I can explain the problem and the expected behavior in 2–3 sentences
   without reading the issue.
   Notes: `ingest_resume` connects parsing, chunking, embedding, and storage, but
   no test runs those steps together. After the fix, a test feeds a sample resume
@@ -46,8 +46,9 @@ pipeline and checks that the returned `chunk_count` is correct.
 
 **Part 2: Tier fit**
 
-- [ ] The tier is a realistic match for where I am right now.
-  Notes: This is a Tier 2 issue. It touches several modules (parser, chunking
+- [x] The tier is a realistic match for where I am right now.
+  Notes: I've worked in large codebases and contributed to open source before,
+  so a Tier 2 issue is a fair match for my skill level. This is a Tier 2 issue. It touches several modules (parser, chunking
   strategy selector, batch embedding processor), but the change is a new test
   file, not changes to production code, which keeps the risk down.
 
@@ -74,11 +75,11 @@ pipeline and checks that the returned `chunk_count` is correct.
 
 **Part 4: Scope and time**
 
-- [ ] I've checked the issue comments and the ledger's Claims count, and I'm
+- [x] I've checked the issue comments and the ledger's Claims count, and I'm
   fine with how many others are on this issue.
-  Notes: The only comment on issue #5 is my claim. I still need to check the
-  Claims column in the cohort ledger.
-- [ ] I've estimated the time and I'm confident I can finish before the Unit 9
+  Notes: The only comment on issue #5 is my claim. I've added the issue to the
+  cohort ledger and checked its Claims count.
+- [x] I've estimated the time and I'm confident I can finish before the Unit 9
   deadline.
   Notes: The issue estimates 4–6 hours. The work is one new test file with no
   production code changes.
@@ -87,4 +88,7 @@ pipeline and checks that the returned `chunk_count` is correct.
   Notes: The issue body has no "blocked by" references and none of its labels
   mark it as blocked.
 
-**Verdict:** [Ready to claim / not yet, and why]
+**Verdict:** Ready to claim. Every box is checked. The scope is one new
+integration test file with no production code changes. That fits the Tier 2
+estimate of 4–6 hours and my experience, and I already have a plan, including
+mocking the DB session so the pipeline doesn't skip ingestion.
