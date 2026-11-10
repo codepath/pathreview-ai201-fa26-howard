@@ -92,3 +92,59 @@ pipeline and checks that the returned `chunk_count` is correct.
 integration test file with no production code changes. That fits the Tier 2
 estimate of 4–6 hours and my experience, and I already have a plan, including
 mocking the DB session so the pipeline doesn't skip ingestion.
+
+## Unit 8 — Reproduction & solution planning
+
+**Reproduction commit link:** [link to commit documenting the reproduced issue]
+
+**Reproduction summary:**
+I confirmed that no test calls `IngestionPipeline.ingest_resume`, and that the
+unit suite covers 0% of `ingestion/pipeline.py`. I then ran
+`tests/fixtures/sample_resumes/new_grad.md` and `mid_career.md` through
+`ingest_resume` with mocked dependencies. The pipeline works (`chunk_count=1`,
+1 embedding call, 1 `vector_db.add`), but a plain `Mock()` DB session silently
+skips ingestion with `chunk_count=0`, so a naive test would never exercise it.
+
+**Reproduction steps:**
+
+1. Search the tests for the pipeline. Nothing references it, and
+   `tests/integration/` holds only `__init__.py`:
+
+   ```bash
+   grep -rn "ingest_resume\|IngestionPipeline" tests   # no matches
+   ```
+
+2. Measure coverage with the unit suite. Result: 375 passed, 53 xfailed.
+   `ingestion/pipeline.py` reports 105 statements, 105 missed, **0%** covered:
+
+   ```bash
+   .venv/bin/python -m pytest tests/unit -q --cov=ingestion --cov-report=term-missing
+   ```
+
+3. Run a fixture through the pipeline with a mock embedding provider (one
+   1536-dim vector per text), a mock vector DB, and a mock DB session:
+
+   | DB session mock | Result |
+   |---|---|
+   | plain `Mock()` | `skipped=True`, `chunk_count=0`, "Source already ingested". Parsing, chunking and embedding never run. |
+   | `.query().filter_by().first()` returns `None` | `skipped=False`, `chunk_count=1`. 5 sections parsed, 1 embed call, 1 `vector_db.add`. |
+
+   Both fixtures give the same result.
+
+**Where the gap lives:** `IngestionPipeline.ingest_resume` in
+`ingestion/pipeline.py`. Its skip check, `_check_skip`, runs
+`db_session.query(...).filter_by(...).first()`. The missing test belongs in
+`tests/integration/test_ingestion_pipeline.py`, which doesn't exist yet.
+
+**PLAN.md link:** [link to PLAN.md in your fork]
+
+**Walkthrough video (recommended):** [link to your Loom video, ≤2 min — recommended, not graded]
+
+**Blockers or open questions:**
+- The pipeline's real `_check_skip` and `_record_ingested_source` are
+  placeholders (`query("IngestedSource")` and a log-only record). The test
+  should mock the DB session rather than use a real database. Confirm that's
+  acceptable for an "integration" test.
+- Resumes use the semantic chunker (~500-token target), so both fixtures come
+  out as 1 chunk. The test should assert that `chunk_count` equals the number of
+  stored embeddings, not a per-section count.
