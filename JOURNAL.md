@@ -136,7 +136,7 @@ skips ingestion with `chunk_count=0`, so a naive test would never exercise it.
 `db_session.query(...).filter_by(...).first()`. The missing test belongs in
 `tests/integration/test_ingestion_pipeline.py`, which doesn't exist yet.
 
-**PLAN.md link:** [link to PLAN.md in your fork]
+**PLAN.md link:** https://github.com/madelinegilmore/pathreview-ai201-fa26-howard/blob/test/5-ingestion-pipeline-e2e/PLAN.md
 
 **Walkthrough video (recommended):** [link to your Loom video, ≤2 min — recommended, not graded]
 
