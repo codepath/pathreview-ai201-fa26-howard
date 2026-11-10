@@ -63,9 +63,6 @@ class TestTechDetector:
         detected_lower = [lang.lower() for lang in data["all_languages"]]
         # .ipynb should be treated as Python, not JSON
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #57: tech detector counts vendored/build-output files"
-    )
     def test_node_modules_excluded(self, detector):
         """Test node_modules/ directory is excluded from counts."""
         files = [
@@ -77,9 +74,13 @@ class TestTechDetector:
 
         result = detector.execute({"files": files})
 
-        data = result.data
-        assert data["primary_language"] == "Python"
-        # node_modules shouldn't dominate
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Python",
+            "all_languages": ["Python"],
+            "frameworks": [],
+        }
 
     def test_vendor_files_excluded(self, detector):
         """Test vendor files are excluded."""
@@ -92,11 +93,14 @@ class TestTechDetector:
 
         result = detector.execute({"files": files})
 
-        # Python should be primary despite vendor files
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Python",
+            "all_languages": ["Python"],
+            "frameworks": [],
+        }
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #57: tech detector counts vendored/build-output files"
-    )
     def test_build_directory_excluded(self, detector):
         """Test build directory is excluded."""
         files = [
@@ -107,8 +111,13 @@ class TestTechDetector:
 
         result = detector.execute({"files": files})
 
-        data = result.data
-        assert data["primary_language"] == "Python"
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Python",
+            "all_languages": ["Python"],
+            "frameworks": [],
+        }
 
     def test_config_file_detection(self, detector):
         """Test detection from config files."""
@@ -230,16 +239,25 @@ class TestTechDetector:
         """Test with empty file list."""
         result = detector.execute({"files": []})
 
-        data = result.data
-        assert data["primary_language"] == "Unknown"
-        assert data["all_languages"] == []
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Unknown",
+            "all_languages": [],
+            "frameworks": [],
+        }
 
     def test_no_files_key(self, detector):
         """Test with no files key in input."""
         result = detector.execute({})
 
-        data = result.data
-        assert data["primary_language"] == "Unknown"
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Unknown",
+            "all_languages": [],
+            "frameworks": [],
+        }
 
     def test_result_structure(self, detector):
         """Test result has required structure."""
@@ -369,3 +387,142 @@ class TestTechDetector:
 
         data = result.data
         # Should detect C++ (from .cpp files)
+
+    @pytest.mark.parametrize("prefix", ["", "frontend/", "packages/site/"])
+    @pytest.mark.parametrize(
+        "directory",
+        ["node_modules", "vendor", "dist", "build", ".git", "__pycache__", ".venv", "venv"],
+    )
+    def test_excluded_directory_components(self, detector, prefix, directory):
+        """Exclude each existing generated/vendor directory at any depth."""
+        result = detector.execute({"files": ["main.py", f"{prefix}{directory}/lib/index.js"]})
+
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Python",
+            "all_languages": ["Python"],
+            "frameworks": [],
+        }
+
+    def test_issue_57_reproduction_preserves_input(self, detector):
+        """Detect only source technologies without changing the supplied paths."""
+        files = [
+            "main.py",
+            "core/app.py",
+            "node_modules/lib/index.js",
+            "node_modules/lib/util.js",
+            "node_modules/x/a.js",
+            "node_modules/y/b.js",
+            "build/bundle.js",
+            "build/vendor.js",
+        ]
+        original_files = files.copy()
+        input_data = {"files": files}
+
+        result = detector.execute(input_data)
+
+        assert input_data == {"files": original_files}
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Python",
+            "all_languages": ["Python"],
+            "frameworks": [],
+        }
+
+    @pytest.mark.parametrize("prefix", ["", "src/"])
+    @pytest.mark.parametrize(
+        "directory", ["build_tools", "rebuild", "vendorized", "node_modules_backup"]
+    )
+    def test_similar_directory_names_remain_eligible(self, detector, prefix, directory):
+        """Keep real JavaScript in directories that merely resemble excluded names."""
+        result = detector.execute({"files": ["main.py", f"{prefix}{directory}/app.js"]})
+
+        assert result.success is True
+        assert result.data == {
+            "primary_language": "JavaScript",
+            "all_languages": ["JavaScript", "Python"],
+            "frameworks": [],
+        }
+
+    @pytest.mark.parametrize("filepath", ["build.py", "src/build.py"])
+    def test_build_filename_remains_eligible(self, detector, filepath):
+        """Do not mistake a source filename for a generated directory."""
+        result = detector.execute({"files": [filepath]})
+
+        assert result.success is True
+        assert result.data == {
+            "primary_language": "Python",
+            "all_languages": ["Python"],
+            "frameworks": [],
+        }
+
+    @pytest.mark.parametrize("filepath", ["build", "src/build", "node_modules", "src/venv"])
+    def test_excluded_name_as_filename_is_not_a_directory(self, detector, filepath):
+        """An exact excluded name is only excluded when it names a directory."""
+        assert detector._should_skip_file(filepath) is False
+
+    @pytest.mark.parametrize("prefix", ["", "frontend/"])
+    def test_only_excluded_paths_return_unknown(self, detector, prefix):
+        """Generated extensions and configuration files contribute no technologies."""
+        files = [
+            f"{prefix}node_modules/lib/index.js",
+            f"{prefix}build/package.json",
+            f"{prefix}vendor/requirements.txt",
+        ]
+
+        result = detector.execute({"files": files})
+
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "Unknown",
+            "all_languages": [],
+            "frameworks": [],
+        }
+
+    @pytest.mark.parametrize("prefix", ["", "frontend/"])
+    @pytest.mark.parametrize(
+        "source, config, language",
+        [
+            ("main.py", "node_modules/lib/package.json", "Python"),
+            ("main.py", "build/package.json", "Python"),
+            ("app.js", "vendor/requirements.txt", "JavaScript"),
+        ],
+    )
+    def test_excluded_configuration_does_not_leak(self, detector, prefix, source, config, language):
+        """Filter configuration indicators as well as language extensions."""
+        result = detector.execute({"files": [source, f"{prefix}{config}"]})
+
+        assert result.success is True
+        assert result.data == {
+            "primary_language": language,
+            "all_languages": [language],
+            "frameworks": [],
+        }
+
+    def test_root_configuration_files_remain_eligible(self, detector):
+        """Preserve language and framework detection from real project manifests."""
+        result = detector.execute({"files": ["package.json", "requirements.txt"]})
+
+        assert result.success is True
+        assert result.data == {
+            "primary_language": "JavaScript",
+            "all_languages": ["JavaScript", "Python"],
+            "frameworks": ["Node.js", "Python"],
+        }
+
+    def test_real_mixed_source_keeps_alphabetical_primary(self, detector):
+        """Keep genuine languages and their existing ordering after filtering."""
+        result = detector.execute(
+            {"files": ["main.py", "core/app.py", "src/app.js", "build/generated.ts"]}
+        )
+
+        assert result.success is True
+        assert result.error is None
+        assert result.data == {
+            "primary_language": "JavaScript",
+            "all_languages": ["JavaScript", "Python"],
+            "frameworks": [],
+        }
