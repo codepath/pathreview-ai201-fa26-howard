@@ -3,6 +3,7 @@
 import pytest
 
 from ingestion.chunking.base import Chunk
+from ingestion.chunking.strategy_selector import StrategySelector
 from ingestion.chunking.structural_chunker import StructuralChunker
 
 
@@ -36,6 +37,29 @@ class TestStructuralChunker:
         assert len(result) >= 1
         assert isinstance(result[0], Chunk)
         assert all(isinstance(c, Chunk) for c in result)
+
+    @pytest.mark.xfail(
+        strict=True, reason="issue #56: structural chunker drops documents with no headings"
+    )
+    def test_large_document_with_no_headings_is_sub_chunked(self, chunker):
+        """Test heading-less document over the section limit is sub-chunked, not dropped."""
+        text = "This is a paragraph with lots of content about the project. " * 200
+        result = chunker.chunk(text, {"source": "test"})
+
+        assert len(result) > 1
+        assert all(c.text.strip() for c in result)
+
+    @pytest.mark.xfail(
+        strict=True, reason="issue #56: structural chunker drops documents with no headings"
+    )
+    def test_readme_with_no_headings_through_strategy_selector(self):
+        """Test heading-less README routed via StrategySelector still produces chunks."""
+        selector = StrategySelector()
+        text = "This project is a CLI tool for tracking habits. It is written in Python. " * 3
+        result = selector.chunk(text, {"source_type": "readme"})
+
+        assert len(result) >= 1
+        assert result[0].metadata["source_type"] == "readme"
 
     def test_document_with_nested_headings(self, chunker):
         """Test document with nested headings preserves heading_path."""
