@@ -95,7 +95,7 @@ mocking the DB session so the pipeline doesn't skip ingestion.
 
 ## Unit 8 — Reproduction & solution planning
 
-**Reproduction commit link:** [link to commit documenting the reproduced issue]
+**Reproduction commit link:** https://github.com/madelinegilmore/pathreview-ai201-fa26-howard/commit/e3080aa19fefd97a1cc1aa2e3352058db66e9662
 
 **Reproduction summary:**
 I confirmed that no test calls `IngestionPipeline.ingest_resume`, and that the
