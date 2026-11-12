@@ -148,3 +148,72 @@ skips ingestion with `chunk_count=0`, so a naive test would never exercise it.
 - Resumes use the semantic chunker (~500-token target), so both fixtures come
   out as 1 chunk. The test should assert that `chunk_count` equals the number of
   stored embeddings, not a per-section count.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+All four PLAN.md sub-tasks are done and pushed to
+`test/5-ingestion-pipeline-e2e`, with one commit per step:
+
+1. Built mock fixtures for the embedding provider, vector DB, and DB session.
+   The session's dedupe lookup returns `None`, so the pipeline doesn't skip
+   ingestion.
+2. Wrote the happy-path test. Both sample resumes are parsed, chunked,
+   embedded, and stored. `chunk_count` matches the number of stored chunks, and
+   `source_id` is deterministic.
+3. Added the skip path and the two edge cases from PLAN.md: a failing dedupe
+   lookup, and an embedding provider error.
+4. Verified everything. 6 integration tests pass, and coverage of
+   `ingestion/pipeline.py` went from 0% to 61%, covering all of `ingest_resume`.
+   I also checked that the tests fail when the pipeline breaks: skipping
+   storage, dropping `profile_id`, or removing the skip check each made at
+   least one test fail.
+
+`make check`, `make test-unit`, `make test-integration`, and the frontend tests
+all pass locally. The PR title and description are drafted from the template.
+
+**Next steps:**
+- Open the draft PR against `codepath/pathreview-ai201-fa26-howard` and ask a
+  classmate or mentor to review it.
+- Address any feedback I agree with, confirm all five CI jobs are green, then
+  mark the PR ready for review.
+
+**Blockers:**
+- Open questions for reviewers:
+  - Is mocking the DB session, embedding provider, and vector DB acceptable for
+    an "integration" test?
+  - Should the "no tests collected" workaround in `.github/workflows/ci.yml` be
+    removed in this PR?
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** [link to your submitted pull request]
+
+**Branch:** `test/5-ingestion-pipeline-e2e`
+
+**What you built:**
+I added the first integration test for the ingestion pipeline. It runs real
+sample resumes through `IngestionPipeline.ingest_resume`, with the real parser,
+chunker, and batch embedding processor and only the external services mocked.
+It checks that every chunk the pipeline reports was embedded and stored with
+the right metadata. It also covers the "already ingested" skip path and the
+failure paths.
+
+**Tests added or updated:**
+`tests/integration/test_ingestion_pipeline.py` (new, 6 tests):
+- end-to-end ingestion of `new_grad.md` and `mid_career.md`;
+- deterministic `source_id`;
+- skipping an already-ingested source;
+- ingestion continuing when the dedupe lookup fails;
+- an embedding provider error propagating with nothing stored.
+
+No existing tests were changed and no xfail markers were removed. #5 isn't a
+seeded bug.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** [name or Slack handle, or "none"]
