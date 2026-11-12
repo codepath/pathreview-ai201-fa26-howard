@@ -45,3 +45,34 @@ PLAN.md sub-task 1 is done: `_detect_sections()` in `ingestion/parsers/resume_pa
 
 **Blockers:**
 None on the fix. The 30 `test_structural_chunker.py` tests error in my sandbox because tiktoken can't download `cl100k_base` (a network proxy blocks it). That's unrelated to #54, and I'll rely on CI to confirm that job.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/84
+
+**Branch:** `fix/54-resume-section-whitespace`
+
+**What you built:**
+I fixed `ResumeParser` (`ingestion/parsers/resume_parser.py`) so resume section headers are detected even when the line is indented, as PDF-extracted text usually is. `_detect_sections()` and `_strip_markdown()` both anchored their regexes at column 0, so I changed both to allow leading horizontal whitespace with `^[^\S\n]*` (any whitespace except a newline, so a match can't spill onto another line). Indented and flush-left resumes now produce the same `detected_sections`.
+
+**Tests added or updated:**
+All in `tests/unit/test_resume_parser.py`:
+- Removed the `xfail(strict=True)` marker from the 5 tests seeded for #54: `test_parse_single_column_resume_text`, `test_parse_resume_no_work_experience`, `test_detect_sections`, `test_parse_markdown_resume`, `test_strip_markdown_syntax`. They now pass.
+- Added `test_detect_sections_indented_matches_flush`, which checks that the same resume indented 4 spaces gives the same sections as flush-left (this was my Unit 8 reproduction test).
+- Added 7 edge-case tests:
+  - tab indentation
+  - mixed indent levels in one document
+  - non-breaking-space (`\xa0`) indentation
+  - an indented multi-word header (`Work Experience`)
+  - indented markdown headers where the blank line between them must survive
+  - two guards against over-loosening: `"I have experience: 5 years"` and a resume with no headers must both return `[]`
+
+The parser file goes from 5 passed / 5 xfailed to 18 passed. The full unit suite is 358 passed / 48 xfailed, vs. 345 / 53 on `main`.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+(`make check`: ruff, black and mypy are clean on all 76 source files. `make test-unit`: every test passes except 30 chunker tests that error in my sandbox because tiktoken couldn't download its encoding file. They error the same way on unmodified `main`, so it's a network issue, not my change. I also ran `test-integration` (no tests collected, which CI treats as a pass) and the frontend tests (18 passed).)
+
+**Draft PR feedback received from:** none
