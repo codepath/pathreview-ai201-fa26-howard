@@ -23,3 +23,39 @@ The `verify_password` function in `core/security.py` checks a user's password ag
 - There's already a test covering it, so I can confirm the fix by running `pytest tests/unit/test_security.py`.
 - I'm comfortable with Python exception handling, and I'll need to read up on how passlib raises `UnknownHashError`.
 - Estimated at 1 to 2 hours, which fits well within the Unit 8 to 9 timeline and leaves room to start a second issue.
+## Unit 8 — Reproduction & solution planning
+
+**Reproduction commit link:** 
+
+**Reproduction summary:**
+I reproduced the bug by running the xfail test with `--runxfail` and by calling `verify_password` directly with a malformed hash, and both times passlib raised `UnknownHashError: hash could not be identified` instead of returning False. I also found that a truncated bcrypt hash raises a plain `ValueError` (not `UnknownHashError`), so the fix has to cover that case too.
+
+1. `pytest tests/unit/test_security.py -k wrong_hash_format -v` shows `XFAIL` (1 xfailed, 24 deselected).
+2. `pytest tests/unit/test_security.py -k wrong_hash_format -v --runxfail` fails:
+   ```
+   >           raise exc.UnknownHashError("hash could not be identified")
+   E           passlib.exc.UnknownHashError: hash could not be identified
+
+   .venv\Lib\site-packages\passlib\context.py:1132: UnknownHashError
+   FAILED tests/unit/test_security.py::TestSecurity::test_verify_with_wrong_hash_format
+   ```
+3. `python -c "from core.security import verify_password; verify_password('password', 'not_a_valid_bcrypt_hash')"` raises:
+   ```
+   File ".venv\Lib\site-packages\passlib\context.py", line 1132, in identify_record
+     raise exc.UnknownHashError("hash could not be identified")
+   passlib.exc.UnknownHashError: hash could not be identified
+   ```
+4. Other malformed hashes (passlib 1.7.4, bcrypt 4.3.0):
+   ```
+   ''                  -> passlib.exc.UnknownHashError: hash could not be identified
+   '$2b$12$short'      -> ValueError: salt too small (bcrypt requires exactly 22 chars)
+   '$argon2id$v=19$xx' -> passlib.exc.UnknownHashError: hash could not be identified
+   ```
+5. In `api/routes/auth.py`, `login()` calls `verify_password` on line 80. The error is not an `HTTPException`, so the generic `except Exception` catches it and the user gets a 500 "Login failed" instead of a 401.
+
+**PLAN.md link:** 
+
+**Walkthrough video (recommended):** Not recorded
+
+**Blockers or open questions:**
+
