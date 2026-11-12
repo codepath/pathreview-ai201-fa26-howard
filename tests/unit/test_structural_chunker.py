@@ -52,6 +52,37 @@ class TestStructuralChunker:
         assert len(result) >= 1
         assert result[0].metadata["source_type"] == "readme"
 
+    def test_document_with_no_headings_metadata(self, chunker):
+        """Test heading-less chunk has empty heading_path and level 0, keeping caller metadata."""
+        text = "Plain README text with no headings."
+        result = chunker.chunk(text, {"source": "test"})
+
+        assert len(result) == 1
+        assert result[0].text == text
+        assert result[0].metadata["source"] == "test"
+        assert result[0].metadata["heading_path"] == ""
+        assert result[0].metadata["heading_level"] == 0
+
+    def test_text_before_first_heading_is_kept(self, chunker):
+        """Test intro text before the first heading becomes its own level-0 chunk."""
+        text = "Intro paragraph about the project.\n\n# Usage\nRun the tool."
+        result = chunker.chunk(text, {})
+
+        assert [c.text for c in result] == ["Intro paragraph about the project.", "Run the tool."]
+        assert result[0].metadata["heading_path"] == ""
+        assert result[0].metadata["heading_level"] == 0
+        assert result[1].metadata["heading_path"] == "Usage"
+        assert result[1].metadata["heading_level"] == 1
+
+    def test_blank_lines_before_first_heading_add_no_chunk(self, chunker):
+        """Test blank lines before the first heading do not create an empty chunk."""
+        text = "\n\n   \n# Title\nBody text."
+        result = chunker.chunk(text, {})
+
+        assert len(result) == 1
+        assert result[0].text == "Body text."
+        assert result[0].metadata["heading_path"] == "Title"
+
     def test_document_with_nested_headings(self, chunker):
         """Test document with nested headings preserves heading_path."""
         text = """# Main Title
