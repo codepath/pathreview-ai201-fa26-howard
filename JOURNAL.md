@@ -191,7 +191,7 @@ all pass locally. The PR title and description are drafted from the template.
 
 ### Check-in 2 (end of week)
 
-**PR link:** [link to your submitted pull request]
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/88
 
 **Branch:** `test/5-ingestion-pipeline-e2e`
 
