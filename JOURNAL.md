@@ -216,4 +216,4 @@ seeded bug.
 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
-**Draft PR feedback received from:** [name or Slack handle, or "none"]
+**Draft PR feedback received from:** [Alexis Evans] : Take out the part about journal entries
