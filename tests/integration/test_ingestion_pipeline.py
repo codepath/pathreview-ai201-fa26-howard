@@ -86,3 +86,43 @@ class TestIngestResume:
         second = pipeline.ingest_resume("profile-1", content, "new_grad.md")
 
         assert first.source_id == second.source_id
+
+    def test_ingest_resume_skips_already_ingested_source(
+        self, pipeline, mock_db_session, mock_vector_db, mock_embedding_provider
+    ):
+        """Test that an already-ingested resume is skipped without embedding or storing."""
+        mock_db_session.query.return_value.filter_by.return_value.first.return_value = Mock()
+        content = (SAMPLE_RESUMES_DIR / "new_grad.md").read_text()
+
+        result = pipeline.ingest_resume("profile-1", content, "new_grad.md")
+
+        assert result.skipped is True
+        assert result.skip_reason == "Source already ingested"
+        assert result.chunk_count == 0
+        mock_embedding_provider.embed.assert_not_called()
+        mock_vector_db.add.assert_not_called()
+
+    def test_ingest_resume_proceeds_when_dedupe_lookup_fails(
+        self, pipeline, mock_db_session, mock_vector_db
+    ):
+        """Test that a failing dedupe lookup is logged and ingestion still completes."""
+        mock_db_session.query.side_effect = RuntimeError("database unavailable")
+        content = (SAMPLE_RESUMES_DIR / "new_grad.md").read_text()
+
+        result = pipeline.ingest_resume("profile-1", content, "new_grad.md")
+
+        assert result.skipped is False
+        assert result.chunk_count >= 1
+        assert mock_vector_db.add.call_count == result.chunk_count
+
+    def test_ingest_resume_propagates_embedding_failure(
+        self, pipeline, mock_embedding_provider, mock_vector_db
+    ):
+        """Test that an embedding provider error is raised and nothing is stored."""
+        mock_embedding_provider.embed.side_effect = RuntimeError("embedding API down")
+        content = (SAMPLE_RESUMES_DIR / "new_grad.md").read_text()
+
+        with pytest.raises(RuntimeError, match="embedding API down"):
+            pipeline.ingest_resume("profile-1", content, "new_grad.md")
+
+        mock_vector_db.add.assert_not_called()
