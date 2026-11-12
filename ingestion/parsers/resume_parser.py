@@ -124,17 +124,30 @@ class ResumeParser(BaseParser):
         return text.strip()
 
     def _detect_sections(self, text: str) -> list[str]:
-        """Detect common resume sections from text."""
+        """
+        Detect common resume sections from text.
+
+        A section header is a known header word on its own line, optionally
+        followed by ``:``, ``|`` or ``-``. Leading horizontal whitespace
+        (spaces, tabs, non-breaking spaces) is ignored, because text extracted
+        from PDFs usually keeps its indentation.
+
+        Args:
+            text: Resume text, after PDF extraction or markdown stripping.
+
+        Returns:
+            De-duplicated list of detected section names in title case.
+        """
         detected = []
         text_lower = text.lower()
 
         for section in SECTION_HEADERS:
-            # Look for section header patterns
+            # [^\S\n]* = any whitespace except a newline, so indentation is
+            # allowed but a match can't jump to a different line. With
+            # re.MULTILINE, ^ matches at every line start.
             patterns = [
-                rf"^{re.escape(section)}\s*$",
-                rf"^{re.escape(section)}\s*[:|-]",
-                rf"\n{re.escape(section)}\s*$",
-                rf"\n{re.escape(section)}\s*[:|-]",
+                rf"^[^\S\n]*{re.escape(section)}\s*$",
+                rf"^[^\S\n]*{re.escape(section)}\s*[:|-]",
             ]
 
             for pattern in patterns:
