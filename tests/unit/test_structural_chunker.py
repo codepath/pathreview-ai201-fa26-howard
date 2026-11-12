@@ -26,9 +26,6 @@ class TestStructuralChunker:
         result = chunker.chunk("   \n\n  ", {})
         assert result == []
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #56: structural chunker drops documents with no headings"
-    )
     def test_document_with_no_headings(self, chunker):
         """Test document with no headings returns single chunk."""
         text = "This is plain text without any markdown headings. " * 20
@@ -38,9 +35,6 @@ class TestStructuralChunker:
         assert isinstance(result[0], Chunk)
         assert all(isinstance(c, Chunk) for c in result)
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #56: structural chunker drops documents with no headings"
-    )
     def test_large_document_with_no_headings_is_sub_chunked(self, chunker):
         """Test heading-less document over the section limit is sub-chunked, not dropped."""
         text = "This is a paragraph with lots of content about the project. " * 200
@@ -49,9 +43,6 @@ class TestStructuralChunker:
         assert len(result) > 1
         assert all(c.text.strip() for c in result)
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #56: structural chunker drops documents with no headings"
-    )
     def test_readme_with_no_headings_through_strategy_selector(self):
         """Test heading-less README routed via StrategySelector still produces chunks."""
         selector = StrategySelector()
