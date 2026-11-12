@@ -152,6 +152,44 @@ class TestResumeParser:
         assert sorted(parser._detect_sections(flush)) == ["Education", "Experience", "Skills"]
         assert sorted(parser._detect_sections(indented)) == sorted(parser._detect_sections(flush))
 
+    def test_detect_sections_tab_indented(self, parser):
+        """Tab-indented headers are detected (#54)."""
+        assert parser._detect_sections("\tEducation:\n\tBS Computer Science") == ["Education"]
+
+    def test_detect_sections_mixed_indentation(self, parser):
+        """Headers at different indent levels in one document are all detected (#54)."""
+        text = "Experience\n  Dev at TechCorp\n    Education:\n BS CS\n        Skills - Python"
+
+        assert sorted(parser._detect_sections(text)) == ["Education", "Experience", "Skills"]
+
+    def test_detect_sections_non_breaking_space_indent(self, parser):
+        """PDF extraction can indent with non-breaking spaces (\\xa0) (#54)."""
+        assert parser._detect_sections("\xa0\xa0Skills: Python, SQL") == ["Skills"]
+
+    def test_detect_sections_indented_multi_word_header(self, parser):
+        """Multi-word headers still match when indented (#54)."""
+        assert parser._detect_sections("    Work Experience\n    Dev at TechCorp") == [
+            "Work Experience"
+        ]
+
+    def test_detect_sections_ignores_header_word_mid_line(self, parser):
+        """Allowing leading whitespace must not match a header word inside a
+        sentence. Only whitespace may come before the header on its line."""
+        text = "I have experience: 5 years\n    my skills include Python"
+
+        assert parser._detect_sections(text) == []
+
+    def test_detect_sections_no_headers_returns_empty(self, parser):
+        """Text with no section headers returns an empty list, not an error."""
+        assert parser._detect_sections("    John Doe\n    Software Engineer") == []
+
+    def test_strip_markdown_indented_headers_keeps_blank_lines(self, parser):
+        """Indented markdown headers are stripped, and the blank line between
+        them survives. The regex must not consume newlines (#54)."""
+        stripped = parser._strip_markdown("    # Jane Doe\n\n    ## Skills\n    - Python")
+
+        assert stripped == "Jane Doe\n\nSkills\n    - Python"
+
     def test_strip_markdown_syntax(self, parser):
         """Test markdown syntax stripping."""
         markdown_text = """
