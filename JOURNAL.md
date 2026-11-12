@@ -52,3 +52,39 @@ print(len(StrategySelector().chunk(text, {'source_type': 'resume'})))  # 1
 "
 .venv/bin/python -m pytest tests/unit/test_structural_chunker.py --runxfail -q  # 3 failed, 14 passed
 ```
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+All five sub-tasks from PLAN.md are done. `_extract_sections()` now collects every non-heading line, saves text before the first heading (or a whole heading-less document) as a level-0 section with an empty `heading_path`, and skips sections that are empty after stripping. The unused `current_level` variable now sets the section level, so its `# noqa: F841` is gone. Heading-less documents over 800 tokens are sub-chunked by `SemanticChunker`, the same as large headed sections. I removed the three `#56` `xfail(strict=True)` markers and added three tests: intro text before the first heading, level-0 metadata on heading-less chunks, and no empty chunk from leading blank lines. `make check` and `make test-unit` both pass (381 passed, 52 xfailed for other issues). The repro snippet from Unit 8 now returns 1 chunk for a heading-less README instead of 0.
+
+Commits:
+- `fix(ingestion): keep heading-less text in structural chunker` (fix + xfail marker removal)
+- `test(ingestion): cover intro text and level-0 metadata in structural chunker`
+
+**Next steps:**
+Open a draft PR, request peer review in Slack, address feedback, confirm all five CI jobs are green, and then mark the PR ready for review.
+
+**Blockers:**
+- Still waiting to hear whether the text-before-the-first-heading fix is in scope for #56. It comes from the same lines of code, so I included it and will call it out in the PR's reviewer notes.
+- The pre-commit hook's black (24.1.0) reformats an existing test that CI's black accepts. I committed with `SKIP=black` and checked formatting with `make format` (CI's black) instead.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** [link to your submitted pull request]
+
+**Branch:** `fix/56-chunker-no-headings`
+
+**What you built:**
+[1–3 sentences summarizing what your fix does and how it works]
+
+**Tests added or updated:**
+[Which test files did you touch? What do they cover?]
+
+**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+
+**Draft PR feedback received from:** [name or Slack handle, or "none"]
