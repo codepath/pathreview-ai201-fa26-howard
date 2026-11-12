@@ -29,3 +29,19 @@ I ran the five tests tagged #54 with `pytest tests/unit/test_resume_parser.py --
 - My Unit 7 branch was named `bug/54-resume-section-detection`, but CONTRIBUTING.md only allows `fix/`, `feat/`, etc., so from Unit 8 on I'm working on `fix/54-resume-section-whitespace` (branched from it). The old branch is untouched.
 - Does `pypdf` really produce non-breaking-space indentation? I'm handling it with `[^\S\n]` and a test, but I haven't seen it in a real PDF yet.
 - `test-integration` needs Postgres/Redis, so I'll rely on CI to confirm that job.
+
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+PLAN.md sub-task 1 is done: `_detect_sections()` in `ingestion/parsers/resume_parser.py` now allows leading horizontal whitespace (`^[^\S\n]*`), and I dropped the two redundant `\n`-prefixed patterns, since `^` with `re.MULTILINE` already covers them. Part of sub-task 3 is done too: four of the six #54 tests (`test_parse_single_column_resume_text`, `test_parse_resume_no_work_experience`, `test_detect_sections`, and my `test_detect_sections_indented_matches_flush`) flipped to `XPASS(strict)` exactly as expected, so I removed their xfail markers in the same commit to keep every commit green. `test_resume_parser.py` is at 9 passed, 2 xfailed; ruff, black and mypy are clean on the changed files.
+
+**Next steps:**
+- Sub-task 2: fix the header regex in `_strip_markdown()`, which should make the last two #54 tests (`test_strip_markdown_syntax`, `test_parse_markdown_resume`) pass so I can remove their markers.
+- Sub-task 4: add the PLAN.md edge-case tests (tabs, mixed indentation, a header word mid-sentence, `\xa0` indentation, blank lines preserved, an indented multi-word header).
+- Sub-task 5: run the full set of CI checks, push, and open the PR.
+
+**Blockers:**
+None on the fix. The 30 `test_structural_chunker.py` tests error in my sandbox because tiktoken can't download `cl100k_base` (a network proxy blocks it). That's unrelated to #54, and I'll rely on CI to confirm that job.
