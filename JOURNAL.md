@@ -25,7 +25,7 @@ The `verify_password` function in `core/security.py` checks a user's password ag
 - Estimated at 1 to 2 hours, which fits well within the Unit 8 to 9 timeline and leaves room to start a second issue.
 ## Unit 8 — Reproduction & solution planning
 
-**Reproduction commit link:** 
+**Reproduction commit link:** https://github.com/kwesi115/pathreview-ai201-fa26-howard/commit/60563d1eabe4a4eee0c3555d50ba582a59a856b1
 
 **Reproduction summary:**
 I reproduced the bug by running the xfail test with `--runxfail` and by calling `verify_password` directly with a malformed hash, and both times passlib raised `UnknownHashError: hash could not be identified` instead of returning False. I also found that a truncated bcrypt hash raises a plain `ValueError` (not `UnknownHashError`), so the fix has to cover that case too.
@@ -53,9 +53,11 @@ I reproduced the bug by running the xfail test with `--runxfail` and by calling 
    ```
 5. In `api/routes/auth.py`, `login()` calls `verify_password` on line 80. The error is not an `HTTPException`, so the generic `except Exception` catches it and the user gets a 500 "Login failed" instead of a 401.
 
-**PLAN.md link:** 
+**PLAN.md link:** https://github.com/kwesi115/pathreview-ai201-fa26-howard/blob/fix/72-verify-password-malformed-hash/PLAN.md
 
 **Walkthrough video (recommended):** Not recorded
 
 **Blockers or open questions:**
 
+- Should I catch all `ValueError` or only `UnknownHashError`? Catching only `UnknownHashError` misses the truncated bcrypt hash (`$2b$12$short`), which raises a plain `ValueError`. But `ValueError` is broader and could hide other problems.
+- Which commit scope should I use for the fix? The code is in `core/`, but `core` isn't in the scope list in CONTRIBUTING.md. I used `api` for the docs commits since the impact is on the login route, but I'm not sure that's right for the actual code change.
