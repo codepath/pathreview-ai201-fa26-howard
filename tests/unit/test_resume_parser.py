@@ -158,6 +158,18 @@ class TestResumeParser:
     @pytest.mark.xfail(
         strict=True, reason="issue #54: resume section detection fails on leading whitespace"
     )
+    def test_detect_sections_indented_matches_flush(self, parser):
+        """Indented headers (common in PDF-extracted text) must be detected the
+        same as flush-left ones. Reproduces #54: indented input returns []."""
+        flush = "Experience:\nSenior Developer\n\nEducation:\nBS Computer Science\n\nSkills: Python"
+        indented = "\n".join("    " + line if line else line for line in flush.split("\n"))
+
+        assert sorted(parser._detect_sections(flush)) == ["Education", "Experience", "Skills"]
+        assert sorted(parser._detect_sections(indented)) == sorted(parser._detect_sections(flush))
+
+    @pytest.mark.xfail(
+        strict=True, reason="issue #54: resume section detection fails on leading whitespace"
+    )
     def test_strip_markdown_syntax(self, parser):
         """Test markdown syntax stripping."""
         markdown_text = """
