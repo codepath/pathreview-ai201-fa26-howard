@@ -76,3 +76,35 @@ The parser file goes from 5 passed / 5 xfailed to 18 passed. The full unit suite
 (`make check`: ruff, black and mypy are clean on all 76 source files. `make test-unit`: every test passes except 30 chunker tests that error in my sandbox because tiktoken couldn't download its encoding file. They error the same way on unmodified `main`, so it's a network issue, not my change. I also ran `test-integration` (no tests collected, which CI treats as a pass) and the frontend tests (18 passed).)
 
 **Draft PR feedback received from:** none
+
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No review has come in yet. I opened PR #84 on November 12 and there are no reviewer or maintainer comments on it so far. It may also be waiting for a maintainer to approve running CI, since it's my first PR from this fork.
+
+**How you responded:**
+Nothing to respond to yet. If feedback comes in, I'll reply on the PR and push fixes to `fix/54-resume-section-whitespace`. The thing I most expect a reviewer to push back on is the `Experience-driven engineer` false positive I flagged in Notes for Reviewers. My plan is to open it as its own issue rather than widen this PR.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The bug wasn't where the issue title said it was, or at least not only there. Issue #54 is about section *detection*, but when I ran the five tests tagged #54 with `--runxfail`, two of them (`test_strip_markdown_syntax` and `test_parse_markdown_resume`) never call `_detect_sections()` at all. They failed because `_strip_markdown()` had the same column-0 `^#+\s+` anchor. If I had fixed only the function the title named, those two would have stayed xfail and I wouldn't have fully closed the issue. The `xfail(strict=True)` workflow was also counterintuitive at first: the moment my fix worked, the suite went *red* with `XPASS(strict)`, and fixing it meant deleting the markers as part of the fix.
+
+**What did you learn about working in a large codebase?**
+The actual code change was two regexes, but most of the work was everything around it. I read `ingestion/pipeline.py` to see that `IngestionPipeline` logs and stores `detected_sections`, so I knew I couldn't change its shape. I followed CONTRIBUTING.md rules I'd never have set for my own project: Conventional Commits with an `(ingestion)` scope, a strict branch-name format, and never running `ruff --fix --unsafe-fixes` because it would delete other students' seeded bugs. I also learned to compare against `main` before trusting a failure: 30 chunker tests errored in my environment, and only running the same suite on unmodified `main` showed it was a tokenizer download blocked by the network, not my change. In my own projects, a red test is always my fault. Here I had to prove it wasn't.
+
+**How did AI tools help — and where did they fall short?**
+I used Claude heavily for Units 8–10. It ran the reproduction, spotted that `_strip_markdown()` shared the bug, wrote most of the fix and tests, and drafted PLAN.md and the PR description. The most useful thing it did was test the tests. It confirmed every new test fails on `main`, and it temporarily swapped `[^\S\n]*` for `\s*` to prove the blank-line test catches exactly that mistake. It fell short on everything outside the code. It couldn't open the PR on the course repo (I had to), it can't get a classmate to review a draft, it can't see whether CI turns green on #84, and it couldn't run the chunker tests in its sandbox. Honestly, its biggest limit is that it made it easy to compress four weeks into one sitting, and I skipped the parts of the process it can't do for me.
+
+**What would you do differently if you started over?**
+I'd read CONTRIBUTING.md *before* creating my branch in Unit 7. I named it `bug/54-resume-section-detection`, `bug` isn't an allowed type, and I had to switch to `fix/54-resume-section-whitespace` partway through, which changed the URL I submit. I'd also spread the work across the weeks as intended. That means opening a draft PR early and getting a peer to review it in Slack, instead of recording "none" for draft feedback, and recording the walkthrough video, since a real reviewer would probably have caught the `Experience-driven` false positive before I did.
+
+**What are you most proud of from this module?**
+The two guard tests that check the fix *doesn't* do too much: `test_detect_sections_ignores_header_word_mid_line` and `test_strip_markdown_indented_headers_keeps_blank_lines`. Making the failing tests pass was the easy part. Thinking about how a looser regex could break things that currently work, and locking that down, is the part that feels like real engineering rather than just closing an issue.
