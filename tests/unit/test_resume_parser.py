@@ -17,9 +17,6 @@ class TestResumeParser:
         """Create a ResumeParser instance."""
         return ResumeParser()
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #54: resume section detection fails on leading whitespace"
-    )
     def test_parse_single_column_resume_text(self, parser, sample_resume_text):
         """Test parsing a standard single-column resume text."""
         result = parser.parse(sample_resume_text)
@@ -36,9 +33,6 @@ class TestResumeParser:
             "skills" in s for s in detected_lower
         )
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #54: resume section detection fails on leading whitespace"
-    )
     def test_parse_resume_no_work_experience(self, parser):
         """Test parsing a resume with no work experience section - handles gracefully."""
         resume_no_work = """
@@ -87,9 +81,6 @@ class TestResumeParser:
             assert "Page 2 Content" in result.text
             assert "Page 3 Content" in result.text
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #54: resume section detection fails on leading whitespace"
-    )
     def test_parse_markdown_resume(self, parser):
         """Test parsing a Markdown resume."""
         markdown_resume = """
@@ -132,9 +123,6 @@ class TestResumeParser:
             exc_info.value
         )
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #54: resume section detection fails on leading whitespace"
-    )
     def test_detect_sections(self, parser):
         """Test section detection in resume text."""
         text = """
@@ -155,9 +143,53 @@ class TestResumeParser:
         assert any("education" in s for s in sections_lower)
         assert any("skills" in s for s in sections_lower)
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #54: resume section detection fails on leading whitespace"
-    )
+    def test_detect_sections_indented_matches_flush(self, parser):
+        """Indented headers (common in PDF-extracted text) must be detected the
+        same as flush-left ones. Reproduces #54: indented input returns []."""
+        flush = "Experience:\nSenior Developer\n\nEducation:\nBS Computer Science\n\nSkills: Python"
+        indented = "\n".join("    " + line if line else line for line in flush.split("\n"))
+
+        assert sorted(parser._detect_sections(flush)) == ["Education", "Experience", "Skills"]
+        assert sorted(parser._detect_sections(indented)) == sorted(parser._detect_sections(flush))
+
+    def test_detect_sections_tab_indented(self, parser):
+        """Tab-indented headers are detected (#54)."""
+        assert parser._detect_sections("\tEducation:\n\tBS Computer Science") == ["Education"]
+
+    def test_detect_sections_mixed_indentation(self, parser):
+        """Headers at different indent levels in one document are all detected (#54)."""
+        text = "Experience\n  Dev at TechCorp\n    Education:\n BS CS\n        Skills - Python"
+
+        assert sorted(parser._detect_sections(text)) == ["Education", "Experience", "Skills"]
+
+    def test_detect_sections_non_breaking_space_indent(self, parser):
+        """PDF extraction can indent with non-breaking spaces (\\xa0) (#54)."""
+        assert parser._detect_sections("\xa0\xa0Skills: Python, SQL") == ["Skills"]
+
+    def test_detect_sections_indented_multi_word_header(self, parser):
+        """Multi-word headers still match when indented (#54)."""
+        assert parser._detect_sections("    Work Experience\n    Dev at TechCorp") == [
+            "Work Experience"
+        ]
+
+    def test_detect_sections_ignores_header_word_mid_line(self, parser):
+        """Allowing leading whitespace must not match a header word inside a
+        sentence. Only whitespace may come before the header on its line."""
+        text = "I have experience: 5 years\n    my skills include Python"
+
+        assert parser._detect_sections(text) == []
+
+    def test_detect_sections_no_headers_returns_empty(self, parser):
+        """Text with no section headers returns an empty list, not an error."""
+        assert parser._detect_sections("    John Doe\n    Software Engineer") == []
+
+    def test_strip_markdown_indented_headers_keeps_blank_lines(self, parser):
+        """Indented markdown headers are stripped, and the blank line between
+        them survives. The regex must not consume newlines (#54)."""
+        stripped = parser._strip_markdown("    # Jane Doe\n\n    ## Skills\n    - Python")
+
+        assert stripped == "Jane Doe\n\nSkills\n    - Python"
+
     def test_strip_markdown_syntax(self, parser):
         """Test markdown syntax stripping."""
         markdown_text = """
