@@ -31,3 +31,34 @@ I reproduced the issue locally by running `pytest tests/unit/test_output_parser.
 
 **Blockers or open questions:**
 None at this time. The root cause is isolated, the reproduction test passes by catching the expected `AttributeError`, and the sub-tasks for Unit 9 implementation in `rag/generator/output_parser.py` and `tests/unit/test_output_parser.py` are clearly mapped.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Completed Sub-tasks 1 and 2 from `PLAN.md`: relaxed the type signature of `_parse_json_output` in `rag/generator/output_parser.py` to accept `dict[str, Any] | list[Any] | Any`, and implemented conditional branching to handle top-level JSON arrays. Implemented parsing logic to extract feedback sections from arrays of dictionaries and wrap arrays of string or primitive items into structured `FeedbackSection` objects without calling `.items()`.
+
+**Next steps:**
+Proceed with Sub-tasks 3, 4, and 5: un-xfail `test_json_array_fallback` in `tests/unit/test_output_parser.py`, add dedicated unit tests covering array edge cases (empty lists `[]`, markdown code fences, mixed primitive types), verify all 380+ unit tests pass with `make check` and `make test-unit`, and submit the final pull request.
+
+**Blockers:**
+None. Reproduction is validated, type narrowing passes mypy with zero errors, and implementation is progressing smoothly on schedule.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/89
+
+**Branch:** fix/69-json-array-fallback
+
+**What you built:**
+Updated `_parse_json_output()` in `rag/generator/output_parser.py` to inspect the deserialized JSON data type before iterating, preventing an unhandled `AttributeError` when an LLM returns a top-level JSON array instead of an object. The function now safely transforms arrays of strings and primitive items into individual `FeedbackSection` objects, extracts structured fields from arrays of dictionaries, and returns an empty list for empty arrays (`[]`). This allows downstream review generation in `rag/generator/review_generator.py` to receive valid feedback sections rather than crashing.
+
+**Tests added or updated:**
+Modified `tests/unit/test_output_parser.py` to remove the `@pytest.mark.xfail(strict=True)` decorator from `test_json_array_fallback`, asserting that an array of strings produces valid `FeedbackSection` items with expected contents. Added four new unit tests: `test_json_array_of_dicts` (covering array of dictionary objects with `section_name`, `content`, and `suggestions`), `test_json_array_empty` (verifying `[]` returns an empty list without error), `test_json_array_in_code_fence` (verifying markdown code-fenced JSON arrays parse correctly), and `test_json_array_mixed_primitives` (verifying safe conversion of mixed string, int, boolean, and null items).
+
+**Self-review confirmation:** [X] make check passes  [X] make test-unit passes
+
+**Draft PR feedback received from:** none
