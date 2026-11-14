@@ -34,3 +34,73 @@ The test suite completed with 18 passing tests and 1 expected failure (xfail). A
 
 **Blockers or open questions:**
 None at the moment
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+
+I inspected `tests/unit/test_relevance_scorer.py` and confirmed that `test_query_with_partial_overlap` was intended to validate partial keyword overlap but used a fixture that created full overlap. I reproduced the issue through test inspection and local testing, then discussed an unexpected pre-commit mypy failure with the instructor. During that investigation, I found an upstream change intended to address the pre-commit issue and attempted to merge it locally.
+
+**Next steps:**
+
+Finish resolving the pre-commit validation issue, verify the updated test passes without the issue-specific `xfail` marker, run `make test-unit` and `make check`, and open a PR for review.
+
+**Blockers:**
+
+A pre-commit mypy check was failing on `tests/unit/test_relevance_scorer.py` even though `make check` and `make test-unit` passed. I reviewed an upstream fix, discussed the issue with the instructor, and used that guidance to complete the implementation.
+
+---
+
+### Check-in 2 (end of week)
+
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/90#issue-6396271836
+
+**PR Description:**
+```
+## Summary
+This PR fixes Issue #64 by correcting the fixture used in test_query_with_partial_overlap.
+
+The test was intended to validate partial keyword overlap, but the fixture text contained all query terms from "Python Django web framework", creating full overlap and causing the test expectation to be incorrect. The fixture was updated so only a subset of the query terms are present, allowing the test to accurately validate partial-overlap behavior.
+
+## Issue
+Closes #64
+
+## Changes
+- Removed the issue-specific @pytest.mark.xfail(...) marker from test_query_with_partial_overlap.
+- Updated the fixture text from a full-overlap example to a genuine partial-overlap example.
+- Kept the relevance scoring implementation unchanged since the issue was in the test fixture rather than the scorer itself.
+- Applied the required test-file update needed to satisfy pre-commit validation during development.
+
+## Testing
+- [x] **CI is green on this PR (all five jobs)** — required for review
+- [x] Unit tests pass (`make test-unit`)
+- [x] Linter passes (`make lint`)
+- [x] Type checker passes (`make typecheck`)
+- [x] New/updated tests cover the changes
+- [x] If this fixes a seeded bug: removed its `@pytest.mark.xfail` marker (and any matching suppression in `pyproject.toml`)
+
+## Notes for Reviewers
+This change only updates test data and removes the issue-specific xfail marker. No production code or relevance-scoring logic was modified. The root cause was that the test fixture represented complete keyword coverage rather than partial keyword overlap, causing the test expectation to conflict with the scorer's correct behavior.
+```
+
+**Branch:** fix/64-partial-overlap-test-fixture
+
+**What you built:**
+
+I updated the fixture used by `test_query_with_partial_overlap` so that it represents genuine partial keyword overlap instead of full overlap. I removed the issue-specific `xfail` marker and verified the test now passes successfully. While implementing the fix, I also resolved a related pre-commit mypy validation issue in the same test file after reviewing an upstream change and discussing the issue with the instructor.
+
+**Tests added or updated:**
+
+Updated `tests/unit/test_relevance_scorer.py`. The modified test now validates partial-overlap scoring using a chunk that contains only a subset of the query terms. I also updated the empty-chunks test annotation required for successful pre-commit validation.
+
+**Self-review confirmation:**
+
+[x] make check passes  
+[x] make test-unit passes
+
+**Draft PR feedback received from:**
+None yet, however
+Instructor (guidance provided regarding the pre-commit mypy issue and upstream fix)
