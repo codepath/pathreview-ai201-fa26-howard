@@ -14,3 +14,10 @@ The `FaithfulnessChecker` crashes with a `TypeError` when a context chunk's text
 
 **Cohort ledger:** 
 [x] Issue added to cohort ledger
+
+## Unit 8 — Reproduction & solution planning
+**Reproduction commit link:** https://github.com/mezier-jamarri/pathreview-ai201-fa26-howard/commit/ba6ad277e17558a478c147f9e017db0667816b11
+**Reproduction summary:** I removed the `xfail` marker from `test_none_context_chunk_text`. Running this test successfully reproduced the expected `TypeError` crash because `.get("text", "")` returns `None` instead of an empty string.
+**PLAN.md link:** https://github.com/mezier-jamarri/pathreview-ai201-fa26-howard/commit/25035e22ddd1b7e2f1a65fa339b8bc8247c068f8
+**Walkthrough video (recommended):** N/A
+**Blockers or open questions:** None.
