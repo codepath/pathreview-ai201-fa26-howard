@@ -62,3 +62,34 @@ Modified `tests/unit/test_output_parser.py` to remove the `@pytest.mark.xfail(st
 **Self-review confirmation:** [X] make check passes  [X] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [X] No — still awaiting review
+
+**Summary of feedback:**
+No external review comments or requested changes have been posted to the pull request yet; PR #89 remains open and awaiting maintainer review.
+
+**How you responded:**
+
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The most challenging aspect was reasoning through the downstream consumer contracts rather than just making the local bug "stop crashing." It initially seemed straightforward to catch a list and wrap it, but diving into `rag/generator/review_generator.py` revealed that `generate_section()` directly accesses `sections[0]` and requires specific fields on `FeedbackSection` (`section_name`, `content`, `confidence`, `suggestions`). Determining how an arbitrary array of strings vs. an array of structured objects should map into `FeedbackSection` without violating type contracts or breaking downstream aggregators in `core/services/review_service.py` demanded careful consideration. Additionally, working within a strict test suite that uses `@pytest.mark.xfail(strict=True)` required precision: an unexpected pass immediately fails the build, and static analysis tools like `mypy` required thorough type narrowing when working with union types (`dict[str, Any] | list[Any]`).
+
+**What did you learn about working in a large codebase?**
+Contributing to someone else's production codebase is fundamentally about respecting established conventions, minimizing blast radius, and understanding that working code is only a fraction of the job. In personal projects, you can easily change function signatures, rewrite models, or adjust test harnesses on a whim. In a shared open-source codebase like PathReview, dozens of other features and over 50 deliberately planted bugs depend on the existing setup remaining intact. Every change must preserve existing abstractions, pass strict pre-commit hooks (`ruff`, `black`, `mypy`), maintain backwards compatibility, and clearly document intent so maintainers can review with high confidence.
+
+**How did AI tools help — and where did they fall short?**
+AI tools were exceptionally effective at navigating the repository architecture, locating where `FeedbackSection` was consumed across the backend, brainstorming realistic edge-case scenarios (empty arrays, markdown fences, mixed types), and formatting Conventional Commit messages and Google-style PR documentation. However, AI fell short when reasoning about project-specific nuances—such as suggesting broad architectural refactors that would have caused unnecessary scope creep, or missing how markdown triple-backtick indentation interacts with regex multiline matching. Discerning which suggestions were safe and strictly adhering to the issue's scope required human verification, manual testing, and inspecting actual runtime outputs.
+
+**What would you do differently if you started over?**
+If starting over, I would adopt a test-driven development (TDD) workflow earlier in the cycle. During Unit 8, I focused heavily on replicating the single existing failure, but writing out all edge-case tests (empty arrays, mixed types, fenced blocks) during the planning phase would have made the implementation phase in Unit 9 even faster. Furthermore, now that I have end-to-end familiarity with PathReview's setup, testing harness, and contribution pipeline, I would feel confident selecting a more complex Tier 2 or Tier 3 issue—such as multi-stage retriever ranking or semantic chunking—to dive deeper into vector indexing and RAG mechanics.
+
+**What are you most proud of from this module?**
+I am most proud of executing a clean, end-to-end open-source contribution cycle from initial bug reproduction to a production-ready pull request that cleanly passed all 380 unit tests and static quality checks. Seeing the exact bug reproduced locally, developing a comprehensive plan in `PLAN.md`, writing resilient defensive logic with full test coverage, and authoring a detailed PR following Google's best engineering practices gave me genuine confidence in my ability to contribute meaningfully to large, professional software projects.
