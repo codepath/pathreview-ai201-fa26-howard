@@ -82,8 +82,16 @@ Closes #64
 - [x] New/updated tests cover the changes
 - [x] If this fixes a seeded bug: removed its `@pytest.mark.xfail` marker (and any matching suppression in `pyproject.toml`)
 
+## Tests Ran
+- `pytest tests/unit/test_relevance_scorer.py -q`
+- `make test-unit`
+- `make check`
+
+All tests and validation checks passed after the fixture update.
 ## Notes for Reviewers
 This change only updates test data and removes the issue-specific xfail marker. No production code or relevance-scoring logic was modified. The root cause was that the test fixture represented complete keyword coverage rather than partial keyword overlap, causing the test expectation to conflict with the scorer's correct behavior.
+
+During implementation, a pre-commit `mypy` validation issue was encountered that was not reproduced by the project's normal validation workflow. After discussing the issue with the instructor and reviewing an upstream change intended to address the problem, the required annotation change was applied and the fix was completed successfully.
 ```
 
 **Branch:** fix/64-partial-overlap-test-fixture
