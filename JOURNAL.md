@@ -61,3 +61,22 @@ I reproduced the bug by running the xfail test with `--runxfail` and by calling 
 
 - Should I catch all `ValueError` or only `UnknownHashError`? Catching only `UnknownHashError` misses the truncated bcrypt hash (`$2b$12$short`), which raises a plain `ValueError`. But `ValueError` is broader and could hide other problems.
 - Which commit scope should I use for the fix? The code is in `core/`, but `core` isn't in the scope list in CONTRIBUTING.md. I used `api` for the docs commits since the impact is on the login route, but I'm not sure that's right for the actual code change.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:** All five sub-tasks in PLAN.md are done. `verify_password` now catches `ValueError` (which covers `UnknownHashError`) and returns `False`, and it logs a warning with only the error type, never the hash. I updated the docstring, removed the strict xfail marker from `test_verify_with_wrong_hash_format`, and added tests for an empty hash, a truncated bcrypt hash and an argon2-style hash. `make check` passes and `make test-unit` gives 379 passed, 52 xfailed, no XPASS.
+**Next steps:** Get my draft PR reviewed in Slack, address any feedback, confirm all five CI jobs are green, then mark the PR ready for review.
+**Blockers:** None right now. The pre-commit black hook got blocked once by a Windows Application Control policy, but it passed when I ran it again.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:**
+**Branch:** `fix/72-verify-password-malformed-hash`
+**What you built:**
+**Tests added or updated:**
+**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+**Draft PR feedback received from:**
