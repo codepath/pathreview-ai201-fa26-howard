@@ -70,7 +70,7 @@ Full local test and CI verification is pending.
 
 **What you built:** I expanded the bias detector's regex patterns to identify common biased statements about educational backgrounds, bootcamp graduates, self-taught developers, and demographic assumptions. I also updated the existing tests and removed the strict expected-failure markers associated with Issue #58.
 
-**Tests added or updated:** I added 11 additional test cases covering biased and neutral feedback. All 43 bias detector tests passed. The full unit test suite completed with 395 passed and 44 expected failures.
+**Tests added or updated:** I updated `tests/unit/test_bias_detector.py` to remove the strict expected-failure markers associated with Issue #58 and added 11 additional test cases covering biased and neutral feedback. All 43 bias detector tests passed. I also ran `make test-unit`, which completed with 395 passed and 44 expected failures. I verified the code quality using `make check`, and all five GitHub CI checks passed.
 
 **Self-review confirmation:**
 - [x] `make check` passes
