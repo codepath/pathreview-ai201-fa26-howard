@@ -3,12 +3,14 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
+from fastapi import HTTPException, status
 from sqlalchemy import and_, select
 
 from api.schemas.review import FeedbackSection
 from core.models.ingested_source import IngestedSource
 from core.models.profile import Profile
 from core.models.review import Review
+from core.services.profile_service import get_profile
 
 log = structlog.get_logger()
 
@@ -19,8 +21,15 @@ async def create_review(
     user_id: UUID,
 ) -> Review:
     """
-    Create a new review with status="pending".
+    Create a pending review after verifying profile ownership.
     """
+    profile = await get_profile(db, profile_id, user_id)
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found",
+        )
+
     review = Review(
         profile_id=profile_id,
         status="pending",
