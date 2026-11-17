@@ -141,17 +141,33 @@ cohort feedback in Slack if the grader prefers)
 
 ### Reviewer feedback
 
-**Feedback received:** [ ] Yes  [x] No — still awaiting review
+**Feedback received:** [x] Yes  [ ] No — still awaiting review
 
 **Summary of feedback:**
-No reviewer comments or review events on PR #93 as of submission. CI
-went green on all five jobs on first push (lint, typecheck, test-unit,
-test-integration, frontend) so there was nothing automated to respond
-to either.
+The grader's Unit 9 feedback flagged two cleanups on the fix itself:
+
+1. The up-front `self.session_store.delete(profile_id)` was redundant.
+   `SessionStore.set()` at the end already replaces the Redis key
+   wholesale, so there was no stale blob to merge into. Worse, on the
+   failure path (a tool raising before `set()` runs), the delete had
+   already cleared the prior blob, leaving an empty key where the
+   previous run's output used to live.
+2. `session_state` was a renamed empty-dict copy of `results` — a
+   leftover from the old merge pattern that no longer earned its
+   keep.
 
 **How you responded:**
-N/A — nothing to address yet. If feedback lands after submission I'll
-engage with it on the PR directly rather than editing this journal.
+Landed both cleanups in commit `447b03d` and posted a reply on PR #93
+walking the reviewer through the change. The fix is now just
+`self.context_manager.clear()` at the top of `run()` and
+`self.session_store.set(profile_id, results)` at the end — no
+up-front delete, no `session_state` rename. Updated the regression
+test (`test_session_store_write_reflects_only_this_run`) to assert
+the new contract (`set()` carries this run's fresh output) rather
+than the old one (`delete()` was called). Verified all three tests
+still fail against pre-fix code by checking out the two touched
+files from `a68a42a~1`, so they continue to discriminate the bug
+from the fix.
 
 ---
 
