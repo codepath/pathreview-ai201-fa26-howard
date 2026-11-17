@@ -216,4 +216,87 @@ seeded bug.
 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
-**Draft PR feedback received from:** [Alexis Evans] : Take out the part about journal entries
+**Draft PR feedback received from:** Alexis Evans. Feedback: take out the part about journal entries.
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [x] Yes  [ ] No — still awaiting review
+
+**Summary of feedback:**
+Alexis Evans reviewed my draft PR (#88) and suggested taking out the part of
+the description about journal entries. My draft had a "Course notes" bullet
+explaining that `JOURNAL.md` and `PLAN.md` were coursework files. That's
+noise for maintainers reviewing the test, and it doesn't belong in the PR.
+No maintainer review has come in on GitHub yet.
+
+**How you responded:**
+I agreed and removed the journal and course-notes bullet from the PR
+description. The rest of the "Notes for Reviewers" stayed, since those are
+real questions for maintainers:
+- whether mocking is acceptable for an integration test;
+- whether to remove the "no tests collected" workaround in `ci.yml`;
+- the `zip` behavior in `BatchEmbeddingProcessor.process`.
+
+After confirming all five CI jobs were green, I marked the PR ready for
+review.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Writing a test that actually tests something. My first instinct was a plain
+`Mock()` for the DB session. That makes the pipeline's dedupe check return a
+truthy object, so `ingest_resume` returns `skipped=True, chunk_count=0` and
+never parses, chunks, or embeds anything. A test like that would have passed
+and proved nothing. To trust my assertions, I had to break the pipeline on
+purpose (skip storage, drop `profile_id`, remove the skip check) and confirm
+the tests failed. I also didn't expect how much process surrounds a small
+code change: issue claiming, the ledger, the PR template, CI on a fork,
+conventional commits, and xfail rules.
+
+**What did you learn about working in a large codebase?**
+Most of the work is reading, not writing. My final change was one new test
+file, but getting there meant tracing `ingest_resume` through the parser,
+the chunking strategy selector, and the batch embedding processor, and
+learning that resumes use the semantic chunker (~500-token chunks). That's
+why both fixtures produce exactly one chunk. In my own projects I decide
+what "correct" means. Here I had to find the intended behavior in
+docstrings, CONTRIBUTING.md, and the CI config, and ask maintainers when the
+code was ambiguous instead of assuming. The CI file even had a comment
+waiting for someone to add the first integration test.
+
+**How did AI tools help — and where did they fall short?**
+AI was most useful for navigating unfamiliar code fast:
+- tracing the call chain;
+- measuring coverage (0% on `ingestion/pipeline.py` before my change);
+- spotting the `Mock()` skip trap;
+- checking my test against the project's conventions and all five CI checks
+  locally.
+
+It fell short in a few places:
+- It described the `zip` behavior in `BatchEmbeddingProcessor` as a bug.
+  When I asked "are we sure this isn't intended?", the evidence turned out
+  weaker. The docstring defines `chunk_count` as chunks *created*, and both
+  real embedding providers always return one vector per text. So it's an open
+  question for maintainers, not a bug. I learned to push back on confident
+  claims and ask for evidence.
+- It couldn't do the human parts: claiming the issue, updating the cohort
+  ledger, opening the PR on GitHub, or getting real feedback from a person.
+- Its drafts weren't in my voice. I still had to own the reasoning and
+  wording in my journal and PR.
+
+**What would you do differently if you started over?**
+I'd open the draft PR and ask for feedback earlier. My Check-in 1 landed a
+day after the Wednesday target, and the review was squeezed into the end of
+the week. I'd also ask maintainers my open questions on the issue during
+planning: mocks versus real services, and the CI workaround. Then they'd be
+settled before I wrote the test instead of sitting in the PR description.
+
+**What are you most proud of from this module?**
+That my tests can fail. I didn't just get them green. I proved they catch
+real breakage, and they took `ingestion/pipeline.py` from 0% to 61% coverage,
+including all of `ingest_resume`. This is also the first integration test in
+the repo, filling the gap the CI workflow was waiting on.
