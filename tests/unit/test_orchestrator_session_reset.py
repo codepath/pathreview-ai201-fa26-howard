@@ -66,11 +66,14 @@ class TestOrchestratorSessionReset:
             assert key.startswith("readme_scorer:")
         assert len(result_b["cached_results"]) == 1, "run B must not see profile-A's cached entries"
 
-    def test_session_store_is_cleared_at_run_start(self):
-        """Stale session blob for the profile must be dropped before the run.
+    def test_session_store_write_reflects_only_this_run(self):
+        """The blob written to the SessionStore must contain only this
+        run's output — not a merge of the prior blob.
 
         Without the fix, run() loaded the previous blob and merged this
         run's results on top, so removed/renamed tool outputs lingered.
+        After the fix, set() is called with exactly this run's results,
+        which replaces the whole Redis key wholesale.
         """
         store = MagicMock()
         store.get.return_value = {"readme_scorer": {"score": 999, "stale": True}}
@@ -79,7 +82,12 @@ class TestOrchestratorSessionReset:
 
         orch.run("profile-A", self._profile("# fresh"))
 
-        store.delete.assert_called_once_with("profile-A")
-        # And the blob actually written back reflects THIS run, not the stale one.
-        written = store.set.call_args.args[1]
-        assert written["readme_scorer"] == {"score": 1}
+        written_key, written_blob = store.set.call_args.args
+        assert written_key == "profile-A"
+        assert written_blob["readme_scorer"] == {"score": 1}, (
+            "SessionStore.set must carry this run's fresh readme_scorer "
+            "output, not the stale {score: 999} value"
+        )
+        assert "stale" not in written_blob["readme_scorer"], (
+            "the prior blob's extra fields must not be merged into " "this run's output"
+        )
