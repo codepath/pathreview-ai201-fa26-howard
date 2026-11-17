@@ -3,10 +3,13 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
+import structlog
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from core.config import settings
+
+log = structlog.get_logger()
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -32,9 +35,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         hashed_password: Previously hashed password to compare against
 
     Returns:
-        True if password matches, False otherwise
+        True if password matches, False otherwise. Malformed or unrecognized
+        hashes also return False instead of raising.
     """
-    return bool(pwd_context.verify(plain_password, hashed_password))
+    try:
+        return bool(pwd_context.verify(plain_password, hashed_password))
+    except ValueError as exc:
+        # UnknownHashError subclasses ValueError; truncated bcrypt hashes raise plain ValueError
+        log.warning("password_verify_malformed_hash", error_type=type(exc).__name__)
+        return False
 
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
