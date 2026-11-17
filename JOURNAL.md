@@ -42,3 +42,37 @@ I reproduced the existing bias detector test results by running `.venv/bin/pytho
 
 **Blockers or open questions:**
 I need to inspect the existing matching patterns and expected-failure cases to determine which rules require changes without introducing false positives.
+
+
+---
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+I reviewed the nine expected-failure tests for Issue #58 and implemented additional patterns in `safety/bias_detector.py` to recognize common alternative phrasings of educational-background and demographic assumptions. I removed the nine obsolete issue-specific xfail markers and added eleven focused test cases in `tests/unit/test_bias_detector.py`, including neutral examples that should not be flagged.
+
+**Next steps:**
+Run the focused tests, `make check`, and `make test-unit`; correct any errors, request peer or mentor feedback on a draft PR, and verify all five GitHub CI jobs before marking the PR ready.
+
+**Blockers:**
+Full local test and CI verification is pending.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** Pending final PR verification.
+
+**Branch:** `fix/58-bias-detector-patterns`
+
+**What you built:**
+Added focused patterns to recognize common biased feedback phrasings without changing the detector's public interface.
+
+**Tests added or updated:**
+`tests/unit/test_bias_detector.py` — removed nine obsolete issue-specific xfail markers and added eleven positive and negative examples.
+
+**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+
+**Draft PR feedback received from:** None yet; review requested when draft PR opens.
