@@ -77,6 +77,6 @@ I reproduced the bug by running the xfail test with `--runxfail` and by calling 
 **PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/83
 **Branch:** `fix/72-verify-password-malformed-hash`
 **What you built:**
-**Tests added or updated:**
-**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+**Tests added or updated:** In `tests/unit/test_security.py` I removed the strict xfail marker from `test_verify_with_wrong_hash_format` and added `test_verify_with_empty_hash`, `test_verify_with_truncated_bcrypt_hash` and `test_verify_with_unsupported_scheme_hash`. All four pass, and the existing `test_verify_password_correct` still passes, so a valid hash with the right password still returns True.
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes (I ran both before opening the PR: `make check` was clean and `make test-unit` gave 379 passed, 52 xfailed, no XPASS. All five CI jobs on the PR are green too.)
 **Draft PR feedback received from:**
