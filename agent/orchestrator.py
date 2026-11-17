@@ -41,13 +41,16 @@ class Orchestrator:
         """
         logger.info("orchestrator_start", profile_id=profile_id)
 
+        # Start each run with an empty memoization cache so the previous
+        # run's cached ToolResult can't short-circuit this one. The Redis
+        # blob is replaced wholesale by set() at the end rather than merged,
+        # so a prior run's fields can't accumulate; if run() raises before
+        # that write, the previous blob stays in place rather than being
+        # cleared out to nothing.
+        self.context_manager.clear()
+
         # Build execution plan
         plan = self._build_plan(profile_data)
-
-        # Load previous session state if available
-        session_state = {}
-        if self.session_store:
-            session_state = self.session_store.get(profile_id) or {}
 
         # Execute plan
         results = {}
@@ -64,8 +67,7 @@ class Orchestrator:
 
         # Persist state
         if self.session_store:
-            session_state.update(results)
-            self.session_store.set(profile_id, session_state)
+            self.session_store.set(profile_id, results)
 
         logger.info("orchestrator_complete", profile_id=profile_id, tools_executed=len(results))
 
