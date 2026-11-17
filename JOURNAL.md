@@ -137,6 +137,115 @@ this branch:
 for review given the deadline; happy to switch to draft and seek
 cohort feedback in Slack if the grader prefers)
 
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No reviewer comments or review events on PR #93 as of submission. CI
+went green on all five jobs on first push (lint, typecheck, test-unit,
+test-integration, frontend) so there was nothing automated to respond
+to either.
+
+**How you responded:**
+N/A — nothing to address yet. If feedback lands after submission I'll
+engage with it on the PR directly rather than editing this journal.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The hardest part wasn't writing the fix — once I understood that
+`Orchestrator` kept one `ContextManager` for its whole lifetime and
+merged every run's blob into the prior one, the change was three small
+edits. The hard part was *proving* the bug was real. I knew the fix
+passed, but a reproduction that only runs on the fixed code doesn't
+demonstrate anything. So I checked out just the two touched files
+from `a68a42a~1`, re-ran the regression tests, confirmed all three
+failed in exactly the way issue #15 described, then restored the fixed
+files. That round-trip — "convince yourself the test discriminates" —
+took longer than the code change and was the single most useful habit
+I picked up.
+
+I also underestimated how much setup friction there is on a fresh
+clone. `make setup` failing with a Postgres connection error turned
+out to be a missing `.env` + Docker not running, not anything in the
+Makefile, and figuring that out meant actually reading
+`docs/SETUP.md` carefully (Postgres is mapped to **5433**, not 5432).
+Small thing, but it ate an hour I hadn't budgeted.
+
+**What did you learn about working in a large codebase?**
+Three things stood out versus personal projects:
+
+1. **State lives in more places than you expect.** This bug involved
+   an in-memory dict (`ContextManager.results`), a Redis blob
+   (`SessionStore`), and a method on `Orchestrator` that merged them
+   silently. Any one of those alone is obvious; the interaction was
+   what produced the symptom. On a solo project I'd have found this in
+   an afternoon of debugging; here, reading the three files in
+   sequence and building a mental model before touching anything saved
+   me from a worse patch.
+2. **The test suite is the documentation.** `tests/unit/` has a
+   consistent shape (one file per module, `@pytest.mark.unit`, class-
+   per-feature with `TestXxx` naming, xfail markers with issue
+   numbers). Matching that pattern made my new file feel like it
+   belonged and probably helped CI pass first try.
+3. **Conventions are gates, not suggestions.** The branch naming, the
+   Conventional Commits format with `fix(agent):` scope, the PR
+   template's five checkboxes — the project uses them to let reviewers
+   skim quickly. Following them exactly is a courtesy to the next
+   person who reads the diff.
+
+**How did AI tools help — and where did they fall short?**
+AI was useful for navigating the codebase quickly (which file holds
+which class, what the tool interface looks like, where to put a new
+test file), for drafting the PR description against a template, and
+for sanity-checking that my regression tests would actually fail
+against pre-fix code before I committed them. It was also good at
+spotting that `make setup` was failing because of a missing `.env` and
+Docker-vs-native-Postgres port mapping — I'd have burned more time on
+that alone.
+
+Where it fell short: judgment about **scope**. The initial instinct
+was to also make `ContextManager` thread-safe while I was in there,
+since the bug touched the same object. That would have been a bigger
+PR with a separate justification, and keeping it out — flagging it as
+"deliberately out of scope" in PLAN.md and the PR description — was a
+call I had to make myself. AI will happily help you do more; deciding
+what *not* to do is still on you.
+
+**What would you do differently if you started over?**
+I'd open a draft PR after the fix commit landed on the branch, not
+after Unit 9's deliverables were all queued. The rubric strongly
+encourages early draft PRs for feedback, and I collapsed that into a
+single ready-for-review push at the end. If a reviewer had wanted a
+different cache-reset vocabulary (e.g. a method on `Orchestrator`
+rather than exposing `ContextManager.clear()`), I'd have learned that
+before the deadline instead of after.
+
+I'd also write the regression tests *before* the fix next time, not
+after. I verified the tests discriminated by checking out the pre-fix
+files, which worked but felt like confirming my own homework. A true
+red-first workflow — tests committed and failing, then the fix
+committed and turning them green — is tidier and makes the history
+itself tell the story.
+
+**What are you most proud of from this module?**
+Not the fix itself — it's three lines plus a `clear()` method. The
+thing I'm most proud of is **PLAN.md**. Writing it forced me to
+separate root cause from symptom, enumerate every edge case
+(including ones I'd never have written tests for — `session_store=
+None`, first run for a profile, empty `profile_data`), and name the
+risks concretely instead of hand-waving. When I opened the PR the
+description nearly wrote itself from PLAN.md, and the reviewer notes
+section ("concurrency deliberately out of scope", "side-effect
+semantics change for any caller relying on stale memoization") came
+straight from the Risks section. Planning well made every later step
+cheaper.
+
 ### "Is this right for me?" — scope reasoning
 
 - **Scope is bounded.** The fix touches three files named in the issue
