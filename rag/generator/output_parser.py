@@ -3,6 +3,7 @@
 import json
 import re
 from dataclasses import dataclass
+from typing import Any
 
 import structlog
 
@@ -53,35 +54,69 @@ def parse_review_output(raw: str) -> list[FeedbackSection]:
     return _parse_plaintext_output(raw)
 
 
-def _parse_json_output(data: dict) -> list[FeedbackSection]:
+def _parse_json_output(data: dict[str, Any] | list[Any] | Any) -> list[FeedbackSection]:
     """Parse structured JSON output.
 
     Args:
-        data: Parsed JSON dict
+        data: Parsed JSON dict or list
 
     Returns:
         List of FeedbackSection objects
     """
-    sections = []
+    sections: list[FeedbackSection] = []
 
-    # Handle both single-level and nested structures
-    for key, value in data.items():
-        if isinstance(value, dict):
-            section = FeedbackSection(
-                section_name=key,
-                content=json.dumps(value),
-                confidence=0.9,
-                suggestions=(
-                    value.get("suggestions", [])
-                    if isinstance(value.get("suggestions"), list)
-                    else []
-                ),
+    if isinstance(data, list):
+        for i, item in enumerate(data):
+            if isinstance(item, dict):
+                section_name = item.get("section_name") or item.get("title") or f"section_{i + 1}"
+                content = (
+                    item["content"] if isinstance(item.get("content"), str) else json.dumps(item)
+                )
+                suggestions = (
+                    item.get("suggestions", []) if isinstance(item.get("suggestions"), list) else []
+                )
+                section = FeedbackSection(
+                    section_name=str(section_name),
+                    content=str(content),
+                    confidence=0.9,
+                    suggestions=suggestions,
+                )
+            else:
+                section = FeedbackSection(
+                    section_name=f"item_{i + 1}",
+                    content=str(item),
+                    confidence=0.85,
+                    suggestions=[],
+                )
+            sections.append(section)
+    elif isinstance(data, dict):
+        # Handle both single-level and nested structures
+        for key, value in data.items():
+            if isinstance(value, dict):
+                section = FeedbackSection(
+                    section_name=str(key),
+                    content=json.dumps(value),
+                    confidence=0.9,
+                    suggestions=(
+                        value.get("suggestions", [])
+                        if isinstance(value.get("suggestions"), list)
+                        else []
+                    ),
+                )
+            else:
+                section = FeedbackSection(
+                    section_name=str(key), content=str(value), confidence=0.85, suggestions=[]
+                )
+            sections.append(section)
+    else:
+        sections.append(
+            FeedbackSection(
+                section_name="general_feedback",
+                content=str(data),
+                confidence=0.7,
+                suggestions=[],
             )
-        else:
-            section = FeedbackSection(
-                section_name=key, content=str(value), confidence=0.85, suggestions=[]
-            )
-        sections.append(section)
+        )
 
     logger.info("json_output_parsed", section_count=len(sections))
     return sections

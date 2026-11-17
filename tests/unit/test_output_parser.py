@@ -138,18 +138,84 @@ class TestOutputParser:
         # Should return empty list or handle gracefully
         assert isinstance(result, list)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #69 (manifest H-02): output parser calls .items() on a JSON array fallback",
-    )
     def test_json_array_fallback(self):
         """Test handling of JSON array (not dict)."""
         raw_output = json.dumps(["First feedback item", "Second feedback item"])
 
         result = parse_review_output(raw_output)
 
-        # May fall back to plaintext or handle specially
         assert isinstance(result, list)
+        assert len(result) == 2
+        assert all(isinstance(s, FeedbackSection) for s in result)
+        assert result[0].content == "First feedback item"
+        assert result[1].content == "Second feedback item"
+
+    def test_json_array_of_dicts(self):
+        """Test handling of JSON array of dictionary objects."""
+        raw_output = json.dumps(
+            [
+                {
+                    "section_name": "strengths",
+                    "content": "Strong Python knowledge",
+                    "suggestions": ["Learn Rust"],
+                },
+                {
+                    "section_name": "improvements",
+                    "content": "Add more test coverage",
+                    "suggestions": ["Add integration tests"],
+                },
+            ]
+        )
+
+        result = parse_review_output(raw_output)
+
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert all(isinstance(s, FeedbackSection) for s in result)
+        assert result[0].section_name == "strengths"
+        assert result[0].content == "Strong Python knowledge"
+        assert result[0].suggestions == ["Learn Rust"]
+        assert result[1].section_name == "improvements"
+        assert result[1].content == "Add more test coverage"
+        assert result[1].suggestions == ["Add integration tests"]
+
+    def test_json_array_empty(self):
+        """Test parsing an empty JSON array."""
+        raw_output = "[]"
+
+        result = parse_review_output(raw_output)
+
+        assert isinstance(result, list)
+        assert len(result) == 0
+
+    def test_json_array_in_code_fence(self):
+        """Test parsing JSON array enclosed in markdown code fence."""
+        raw_output = """```json
+[
+    "Feedback item in code fence 1",
+    "Feedback item in code fence 2"
+]
+```"""
+
+        result = parse_review_output(raw_output)
+
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0].content == "Feedback item in code fence 1"
+        assert result[1].content == "Feedback item in code fence 2"
+
+    def test_json_array_mixed_primitives(self):
+        """Test handling of JSON array containing mixed primitive types."""
+        raw_output = json.dumps(["A string item", 42, True, None])
+
+        result = parse_review_output(raw_output)
+
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].content == "A string item"
+        assert result[1].content == "42"
+        assert result[2].content == "True"
+        assert result[3].content == "None"
 
     def test_very_long_plain_text(self):
         """Test parsing very long plain text."""
