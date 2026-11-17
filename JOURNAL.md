@@ -65,6 +65,78 @@ the fix in place, all three pass.
   stale cross-run memoization. I grepped `agent/` and `api/` and found
   no such caller, but I'll re-verify during PR review.
 
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+PLAN.md sub-tasks 1–4 are done and committed on this branch:
+- `ContextManager.clear()` added (commit `a68a42a`).
+- `Orchestrator.run()` now calls `self.context_manager.clear()` and,
+  when a `session_store` is configured, `self.session_store.delete(
+  profile_id)` at the top (commit `a68a42a`).
+- The prior-blob load is dropped; `session_state` starts empty and the
+  write at the end is only this run's `results` (commit `a68a42a`).
+- Three regression tests in
+  `tests/unit/test_orchestrator_session_reset.py` pin the behavior
+  (commit `d0cb48a`) — verified they fail against the two touched
+  files checked out from `a68a42a~1` and pass on this branch.
+
+**Next steps:**
+- PLAN.md sub-task 5: run the full unit suite via `make test-unit` and
+  `make check` end-to-end once more on a clean worktree.
+- Open the PR against `codepath/pathreview-ai201-fa26-howard` with the
+  template fully filled in (summary, closes #15, change list, manual
+  verification steps, reviewer notes).
+- Share the draft PR link in the cohort Slack channel for peer
+  feedback before marking it ready.
+
+**Blockers:**
+None. I noted two open items for the PR description: concurrency is
+deliberately out of scope (ContextManager has never been thread-safe),
+and I want a second pair of eyes on whether any caller relies on the
+old cross-run memoization behavior.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/93
+
+**Branch:** `fix/15-orchestrator-session-reset`
+
+**What you built:**
+At the top of `Orchestrator.run`, clear the in-memory `ContextManager`
+and, when a `session_store` is configured, delete the profile's saved
+Redis blob; also drop the prior-blob load so the session state written
+at the end reflects only this run. The orchestrator can now be reused
+across profiles (or across reviews of the same profile) without the
+first run's cached `ToolResult` short-circuiting later runs or stale
+tool outputs accumulating in Redis.
+
+**Tests added or updated:**
+Added `tests/unit/test_orchestrator_session_reset.py` with three
+regression tests, each failing against the pre-fix code and passing on
+this branch:
+
+- `test_second_run_same_input_reexecutes_tool` — drives two `run`
+  calls with identical inputs through a counting stand-in tool and
+  asserts the tool was actually invoked twice (not short-circuited to
+  the cached first-run `ToolResult`).
+- `test_cached_results_do_not_leak_across_profiles` — runs profile A,
+  then profile B, and asserts profile B's returned `cached_results`
+  contains only B's own entry.
+- `test_session_store_is_cleared_at_run_start` — passes a `MagicMock`
+  `session_store` whose `get` returns a stale blob, and asserts
+  `delete(profile_id)` is called once and that the blob written back
+  at the end reflects only this run's output, not the stale merge.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none (opened PR directly as ready
+for review given the deadline; happy to switch to draft and seek
+cohort feedback in Slack if the grader prefers)
+
 ### "Is this right for me?" — scope reasoning
 
 - **Scope is bounded.** The fix touches three files named in the issue
