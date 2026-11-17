@@ -74,7 +74,7 @@ I reproduced the bug by running the xfail test with `--runxfail` and by calling 
 
 ### Check-in 2 (end of week)
 
-**PR link:**
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/83
 **Branch:** `fix/72-verify-password-malformed-hash`
 **What you built:**
 **Tests added or updated:**
