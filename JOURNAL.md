@@ -75,16 +75,18 @@ Open a draft PR, request peer review in Slack, address feedback, confirm all fiv
 
 ### Check-in 2 (end of week)
 
-**PR link:** [link to your submitted pull request]
+**PR link:** [Upstream PR #86](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/86) (open as a draft)
 
 **Branch:** `fix/56-chunker-no-headings`
 
 **What you built:**
-[1–3 sentences summarizing what your fix does and how it works]
+The structural chunker now keeps README text when the document has no headings or starts with an introduction. It stores that text as a level-0 section with an empty heading path and uses the existing semantic chunker for sections over 800 tokens.
 
 **Tests added or updated:**
-[Which test files did you touch? What do they cover?]
+In `tests/unit/test_structural_chunker.py`, I enabled three regression tests for heading-less input, including a long document and a README routed through `StrategySelector`. I added coverage for level-0 metadata, retaining the introduction, and skipping empty chunks before the first heading.
 
-**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes (381 passed, 52 xfailed)
 
-**Draft PR feedback received from:** [name or Slack handle, or "none"]
+**GitHub checks:** Lint, type checking, unit tests, integration tests, frontend, and eval all passed on commit `0d8eed9`.
+
+**Draft PR feedback received from:** Hamid Kabia.
