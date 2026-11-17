@@ -31,3 +31,38 @@ The tests mix asynchronous and synchronous behavior, but the final assertions do
 **Setup confirmation:** [x] App runs locally at localhost:5173
 
 **Cohort ledger:** [x] Issue added to cohort ledger
+
+
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+- Completed PLAN.md sub-task 1: replaced the `AsyncMock` result objects with regular `Mock` result objects (via a `make_result()` helper), while keeping `AsyncMock` for the awaited `db.execute()`, `db.commit()`, and `db.refresh()` calls.
+- Completed PLAN.md sub-task 2: updated the `get_review()` tests so `scalars().first()` synchronously returns the expected review or `None`, and they assert `execute` was awaited exactly once.
+
+**Next steps:**
+- PLAN.md sub-task 3: update the `list_reviews()` tests so `scalars().all()` returns plain lists and assertions account for its two queries (count + page).
+- PLAN.md sub-task 4: remove the issue #65 `xfail` markers and replace weak assertions (e.g. `len(reviews) > 0 or len(reviews) == 0`) with exact ones.
+- PLAN.md sub-task 5: run the focused review-service tests, then `make test-unit` and `make check`.
+
+**Blockers:** None.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** PR_LINK_HERE
+
+**Branch:** `fix/65-review-service-async-mocks`
+
+**What you built:**
+I fixed the review_service unit tests so their mocks match the service's real async boundaries: awaited database calls (`execute`, `commit`, `refresh`) use `AsyncMock`, while SQLAlchemy result methods (`scalars().first()` / `scalars().all()`) use synchronous `Mock`s. I removed the six issue #65 `xfail` markers and tightened the assertions so they check exact return values and the correct number of awaited database queries.
+
+**Tests added or updated:**
+Modified `tests/unit/test_review_service.py` (no production code changed). The tests now cover: `get_review()` returning the owned review, or `None` when no owned review is found, with exactly one awaited query; `list_reviews()` returning the exact reviews list and total count as a `(reviews, total)` tuple with exactly two awaited queries (count + page); page 2 with `page_size=20` producing a query offset of 20; and `create_review()` creating a review with `pending` status and calling `add`, `commit`, and `refresh`. All 19 tests pass with no un-awaited coroutine warnings.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none
