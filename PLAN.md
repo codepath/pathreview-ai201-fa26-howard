@@ -19,11 +19,19 @@
 
 ### Plan
 
-1. In `verify_password`, wrap `pwd_context.verify(...)` in `try/except ValueError` and return `False` in the except block. Catching `ValueError` covers `UnknownHashError` (a subclass) and the plain `ValueError` from truncated bcrypt hashes.
-2. Update the docstring so it says malformed or unrecognized hashes return `False` instead of raising.
-3. Remove the strict `xfail` marker from `test_verify_with_wrong_hash_format`.
-4. Add tests (probably one parametrized test) for `""`, `"$2b$12$short"` and `"$argon2id$v=19$xx"` that assert `verify_password` returns `False`. Also check that a valid hash with the right password still returns `True`.
-5. Run `make check && make test-unit` and make sure everything passes with no XPASS.
+- [x] 1. In `verify_password`, wrap `pwd_context.verify(...)` in `try/except ValueError` and return `False` in the except block. Catching `ValueError` covers `UnknownHashError` (a subclass) and the plain `ValueError` from truncated bcrypt hashes.
+- [x] 2. Update the docstring so it says malformed or unrecognized hashes return `False` instead of raising.
+- [x] 3. Remove the strict `xfail` marker from `test_verify_with_wrong_hash_format`.
+- [x] 4. Add tests (probably one parametrized test) for `""`, `"$2b$12$short"` and `"$argon2id$v=19$xx"` that assert `verify_password` returns `False`. Also check that a valid hash with the right password still returns `True`.
+- [x] 5. Run `make check && make test-unit` and make sure everything passes with no XPASS.
+
+**What changed from the original plan:**
+
+- I added a warning log after all. I put `log = structlog.get_logger()` at the top of `core/security.py`, the same way `api/routes/health.py` does it. The log only includes the exception type name (`error_type`), not the exception message, so the hash and password never end up in the logs.
+- I wrote three separate test methods instead of one parametrized test, because every other test in `TestSecurity` is a plain method with its own docstring. The existing `test_verify_password_correct` already covers a valid hash with the right password returning `True`, so I didn't add a new test for that.
+- There was no `pyproject.toml` suppression for #72, so there was nothing to remove there.
+- `make test-integration` collects 0 tests because `tests/integration/` is empty on purpose. CI treats that as a pass.
+- After the fix: `make check` passes, and `make test-unit` gives 379 passed, 52 xfailed, no XPASS.
 
 ### Inputs & outputs
 
