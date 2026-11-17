@@ -77,4 +77,4 @@ Full local test and CI verification is pending.
 - [x] `make test-unit` passes
 - [x] All five GitHub CI checks passed
 
-**Draft PR feedback received from:** Awaiting peer or mentor feedback.
+**Draft PR feedback received from:** I requested feedback from a peer who reviewed my work and confirmed that they had no concerns or additional changes to suggest.
