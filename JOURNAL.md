@@ -48,3 +48,24 @@ Run the integration checks, fix the unawaited-coroutine warning in test_share_ro
 **Blockers:**
 None. My first fork PR may need a maintainer to approve CI runs, so I am opening the draft PR today.
 
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/100
+
+**Branch:** feat/40-share-review-link
+
+**What you built:**
+I added expiring, read-only share links for review summaries. A logged-in user clicks Copy link on a completed review to generate a link, and anyone with that link can open a public read-only summary without logging in until the link expires 30 days after creation. Expiry and token validation are enforced on the server, and the public view returns only status, overall score, sections, and expiry date.
+
+**Tests added or updated:**
+- tests/unit/test_share_service.py: covers link creation for a completed review, reuse of an existing valid link, a new link when the old one has expired, unique tokens, expiry of exactly 30 days, a missing review returning 404, an incomplete review being rejected, an expired token returning 410, invalid and empty tokens returning 404, and the public schema omitting private fields such as owner and profile identifiers.
+- tests/unit/test_share_routes.py: covers an authenticated user creating a link, authentication being required to create one, the public endpoint returning a summary without auth, expired and invalid tokens, and the public endpoint being read-only.
+- frontend/src/pages/__tests__/ReviewPage.test.tsx: covers the Copy link button on a completed review summary.
+- frontend/src/pages/__tests__/SharedReviewPage.test.tsx: covers displaying a valid shared summary and the expired and invalid link states.
+- frontend/src/services/__tests__/shareService.test.ts: covers the share link API calls.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none
