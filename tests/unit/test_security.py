@@ -215,16 +215,37 @@ class TestSecurity:
         assert isinstance(hashed, str)
         assert verify_password(long_password, hashed) is True
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #72 (manifest H-05): password verify raises UnknownHashError instead of returning False",
-    )
     def test_verify_with_wrong_hash_format(self):
         """Test verify_password with non-bcrypt hash."""
         wrong_hash = "not_a_valid_bcrypt_hash"
 
         # Should handle gracefully, return False
         result = verify_password("password", wrong_hash)
+
+        assert result is False
+
+    def test_verify_with_empty_hash(self):
+        """Test verify_password with an empty stored hash."""
+        empty_hash = ""
+
+        result = verify_password("password", empty_hash)
+
+        assert result is False
+
+    def test_verify_with_truncated_bcrypt_hash(self):
+        """Test verify_password with a truncated bcrypt hash."""
+        truncated_hash = "$2b$12$short"
+
+        # passlib raises a plain ValueError here, not UnknownHashError
+        result = verify_password("password", truncated_hash)
+
+        assert result is False
+
+    def test_verify_with_unsupported_scheme_hash(self):
+        """Test verify_password with an argon2-style hash the context doesn't support."""
+        argon2_hash = "$argon2id$v=19$xx"
+
+        result = verify_password("password", argon2_hash)
 
         assert result is False
 
