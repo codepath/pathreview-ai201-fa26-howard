@@ -16,7 +16,7 @@ I chose Tier 2 because it matches my experience. I have built and shipped multi-
 - **What is currently missing:** There is no share feature. The app has no control for generating a link, no service call to request one, and no API route that serves a review summary to someone who is not logged in. The only way to show a summary to another person today is to give them access to the account.
 - **What a successful fix accomplishes:** A user can generate a share link from the review page and copy it. Anyone with the link can open a read-only view of that review summary without logging in. The link stops working after 30 days, and the person opening it sees that it has expired.
 
-**Branch name:** feature/40-copy-link-button
+**Branch name:** feat/40-share-review-link
 
 **Setup confirmation:** [x] App runs locally at localhost:5173
 
@@ -32,4 +32,19 @@ I checked out main, ran the app locally, and confirmed the review page has no sh
 **PLAN.md link:** https://github.com/shemarieirons/pathreview-ai201-fa26-howard/blob/feature/40-copy-link-button/PLAN.md
 
 **Walkthrough video (recommended):** "not recorded"
+
+**Blockers or open questions:**
+None.
+
+## Unit 9 - Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+All five sub-tasks from PLAN.md are implemented and committed: the review_share model and migration 003, the share service with token creation and a 30-day expiry check, the authenticated create route in reviews.py and the public read-only route in share.py, the frontend shareService.ts and ReviewPage share button with the new SharedReviewPage, and tests. On the backend, make check passes and make test-unit shows 394 passed and 53 xfailed, including 19 new tests in test_share_service.py and test_share_routes.py covering the 30-day expiry, expired and invalid tokens, and unauthenticated read-only access. No xfail marker is tied to this issue, so none needed removal. On the frontend, npm test -- --run passes with 29 tests across 5 files, including new tests for shareService, ReviewPage (copy link button), and SharedReviewPage.
+**Next steps:**
+Run the integration checks, fix the unawaited-coroutine warning in test_share_routes.py, check Google-style docstrings on the new public functions, open a draft PR and request peer feedback in Slack, then complete the PR template and mark the PR ready for review.
+
+**Blockers:**
+None. My first fork PR may need a maintainer to approve CI runs, so I am opening the draft PR today.
 
