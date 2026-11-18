@@ -198,3 +198,57 @@ pass today and must keep passing after the fix.
 `street_address` patterns in a throwaway copy and removed every #53 marker. The file went
 to **48 passed, 0 xfailed**, and across `tests/unit` the only change was those xfails
 becoming passes. None of that code is committed. The real implementation is Unit 9.
+
+---
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Sub-tasks 1 and 2 from PLAN.md are done. `phone_us` in `safety/pii_scrubber.py` now
+allows one hyphen, dot, or space between groups, accepts the area code bare or in a balanced
+pair of parens, and uses lookarounds in place of both `\b` anchors so a match can start on
+`(` or `+`. All 10 per-format cases from my reproduction commit and the four tests the issue
+names now pass, and their xfail markers are gone. One deviation from the plan: I used a
+literal space rather than `\s` as the separator. With `\s`, `"Room 555\n123 4567"` is joined
+across the line break into one "phone number", which is exactly the kind of over-redaction I
+flagged as the main risk.
+
+**Next steps:**
+Sub-task 3 (`street_address` word boundaries, so `test_mixed_pii_and_text` passes for the
+right reason) as its own commit, sub-task 4 (punctuation, two-number, line-break,
+street-suffix and all-PII regression tests), then `make check`, `make test-unit`, and the PR.
+
+**Blockers:**
+No reply yet in Slack on whether the `street_address` fix belongs in this PR. Since the test
+carries the #53 marker and `CONTRIBUTING.md` says the fix must drop every #53 marker, I'm
+keeping it here as a separate commit and flagging it in the PR so a reviewer can ask me to
+split it out. Docker still isn't installed, so `make test-integration` runs only in CI.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/98
+
+**Branch:** `fix/53-pii-scrubber-parenthesized-phone`
+
+**What you built:**
+`PIIScrubber` now redacts every common US phone format, including `(555) 123-4567`,
+`+1 555 123 4567` and `(555)123-4567`, in full, with no stray `(` or `+`, and `detect()`
+reports the whole number with correct offsets. A second commit makes `street_address`
+require whole-word suffixes, which was the real cause of the fifth #53 test failing.
+
+**Tests added or updated:**
+`tests/unit/test_pii_scrubber.py`: removed all 15 #53 xfail markers (the 5 original tests
+plus the 10 per-format cases from Unit 8, along with the `_ISSUE_53` mark object) and added
+11 test cases: punctuation-wrapped numbers, two numbers in one string with `detect()` offsets,
+no matching across a line break, street suffixes inside words (`applications`, `platforms`)
+left alone, real addresses still redacted, and all PII types in one string. 21 tests in the
+file fail against the original scrubber and pass with the fix.
+`make test-unit`: **414 passed, 48 xfailed** (before: 388 passed, 63 xfailed).
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none
