@@ -218,10 +218,6 @@ class TestPIIScrubber:
         scrubbed = scrubber.scrub(text)
         assert scrubbed == text
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #53: PII scrubber does not redact parenthesized US phone numbers",
-    )
     def test_mixed_pii_and_text(self, scrubber):
         """Test text with mix of PII and regular content."""
         text = """
@@ -351,6 +347,29 @@ def test_issue_53_phone_does_not_span_lines():
     text = "Room 555\n123 4567"
 
     assert PIIScrubber().scrub(text) == text
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("5 years developing Python applications.", id="pl-inside-word"),
+        pytest.param("I led 3 teams across Stripe platforms.", id="st-inside-word"),
+    ],
+)
+def test_street_address_suffix_must_be_whole_word(text):
+    """A street suffix inside a longer word (e.g. "pl" in "applications") is not an address."""
+    assert PIIScrubber().scrub(text) == text
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "address",
+    ["123 Main Street", "42 Elm Rd", "12 Park Pl", "456 Oak Avenue"],
+)
+def test_street_address_still_redacted(address):
+    """Real street addresses are still redacted after the word-boundary fix."""
+    assert PIIScrubber().scrub(f"Lives at {address}, Suite 3") == "Lives at [REDACTED], Suite 3"
 
 
 @pytest.mark.unit
