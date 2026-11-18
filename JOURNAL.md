@@ -82,6 +82,21 @@ Closes #64
 - [x] New/updated tests cover the changes
 - [x] If this fixes a seeded bug: removed its `@pytest.mark.xfail` marker (and any matching suppression in `pyproject.toml`)
 
+### Manual verification
+
+1. Open `tests/unit/test_relevance_scorer.py`.
+
+2. Locate `test_query_with_partial_overlap`.
+
+3. Verify the test uses:
+
+```python
+query = "Python Django web framework"
+
+chunks = [
+    {"text": "Python web application development"},
+]
+
 ## Tests Ran
 - `pytest tests/unit/test_relevance_scorer.py -q`
 - `make test-unit`
@@ -112,3 +127,42 @@ Updated `tests/unit/test_relevance_scorer.py`. The modified test now validates p
 **Draft PR feedback received from:**
 None yet, however
 Instructor (guidance provided regarding the pre-commit mypy issue and upstream fix)
+
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+
+No review came in
+
+**How you responded:**
+
+No response to be given
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+
+The most difficult part was not implementing the actual fix but debugging the development workflow around it. After updating `test_query_with_partial_overlap`, the test suite passed successfully, but the pre-commit mypy hook continued failing with type annotation errors. It was confusing because `make check` and `make test-unit` were both passing, which made it difficult to determine whether the problem was in my code, the tooling, or the project configuration.
+
+**What did you learn about working in a large codebase?**
+
+I learned that understanding the surrounding tooling and contribution process is just as important as changing code. In a personal project I might stop after seeing tests pass, but in a shared codebase there are additional requirements such as pre-commit hooks, issue tracking, branch conventions, CI checks, and code review expectations. I also learned that fixes often involve understanding decisions that other contributors have already made rather than only writing new code.
+
+**How did AI tools help — and where did they fall short?**
+
+AI tools were helpful for understanding the issue, navigating the repository, drafting documentation, and creating plans for reproducing and fixing the bug. They were also useful when reviewing test behavior and preparing my PR and journal entries. However, AI could not determine why the pre-commit hook was behaving differently from the project's normal validation commands. Resolving that issue required discussing the problem with the instructor, reviewing an upstream fix, and manually investigating the repository state.
+
+**What would you do differently if you started over?**
+
+I would spend more time checking whether there were already related fixes or discussions connected to the issue before making changes. Earlier investigation into upstream branches and existing work would have saved time spent debugging the pre-commit problem. I would also open my draft PR earlier so that feedback about the testing section and verification steps could be incorporated sooner.
+
+**What are you most proud of from this module?**
+
+I am most proud of working through the debugging process instead of giving up when the workflow became confusing. The code change itself was relatively small, but I successfully navigated Git operations, issue reproduction, testing, pre-commit validation problems, instructor feedback, and the pull request process. Completing the contribution from issue selection through a merged PR gave me confidence that I can work effectively in an unfamiliar codebase.
