@@ -31,10 +31,6 @@ class TestPIIScrubber:
         assert "alice@example.com" not in scrubbed
         assert "bob@company.org" not in scrubbed
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #53: PII scrubber does not redact parenthesized US phone numbers",
-    )
     def test_us_phone_number_redaction(self, scrubber):
         """Test US phone number is redacted."""
         text = "Call me at (555) 123-4567"
@@ -43,10 +39,6 @@ class TestPIIScrubber:
         assert "[REDACTED]" in scrubbed
         assert "555" not in scrubbed or "1234567" not in scrubbed
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #53: PII scrubber does not redact parenthesized US phone numbers",
-    )
     def test_us_phone_formats(self, scrubber):
         """Test various US phone number formats."""
         formats = [
@@ -127,10 +119,6 @@ class TestPIIScrubber:
         assert len(email_detections) > 0
         assert "alice@example.com" in email_detections[0]["value"]
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #53: PII scrubber does not redact parenthesized US phone numbers",
-    )
     def test_detect_phone_pii(self, scrubber):
         """Test detect() finds phone number PII."""
         text = "Phone: (555) 123-4567"
@@ -188,10 +176,6 @@ class TestPIIScrubber:
             scrubbed = scrubber.scrub(text)
             assert email not in scrubbed or "[REDACTED]" in scrubbed
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #53: PII scrubber does not redact parenthesized US phone numbers",
-    )
     def test_phone_at_start_of_text(self, scrubber):
         """Test phone number at start of text."""
         text = "(555) 123-4567 is my phone number."
@@ -274,29 +258,24 @@ class TestPIIScrubber:
         # (version number shouldn't be flagged as SSN)
 
 
-# --- Issue #53 reproduction ------------------------------------------------
+# --- Issue #53 regression ---------------------------------------------------
 # `test_us_phone_formats` above loops over its formats and stops at the first
-# failure, so it hides how many formats are actually broken. These cases run
-# each format on its own. Every format that uses a space as a separator fails
-# today, because the `phone_us` separator class is `[-.]` and admits no
-# whitespace. The "#53" markers come off when the pattern is fixed.
-_ISSUE_53 = pytest.mark.xfail(
-    strict=True,
-    reason="issue #53: phone_us separator class [-.] rejects whitespace",
-)
-
+# failure, so it hides how many formats are broken. These cases run each format
+# on its own. Before the #53 fix every space-separated format failed, because the
+# `phone_us` separator class was `[-.]`, and a leading `\b` left "(" and "+"
+# outside the match.
 _US_PHONE_FORMATS = [
     pytest.param("555-123-4567", id="dashed"),
     pytest.param("555.123.4567", id="dotted"),
     pytest.param("5551234567", id="bare-digits"),
     pytest.param("1-555-123-4567", id="leading-1-dashed"),
-    pytest.param("(555) 123-4567", id="parenthesized", marks=_ISSUE_53),
-    pytest.param("+1 555 123 4567", id="plus1-spaced", marks=_ISSUE_53),
-    pytest.param("+1 (555) 123-4567", id="plus1-parenthesized", marks=_ISSUE_53),
-    pytest.param("555 123 4567", id="spaced", marks=_ISSUE_53),
-    # No space here, but the leading "(" is left behind: the match starts at
-    # "555" because the pattern opens with \b, which cannot sit before "(".
-    pytest.param("(555)123-4567", id="parenthesized-no-space", marks=_ISSUE_53),
+    pytest.param("(555) 123-4567", id="parenthesized"),
+    pytest.param("+1 555 123 4567", id="plus1-spaced"),
+    pytest.param("+1 (555) 123-4567", id="plus1-parenthesized"),
+    pytest.param("555 123 4567", id="spaced"),
+    # No space here, but before #53 the leading "(" was left behind because the
+    # pattern opened with \b, which cannot sit before "(".
+    pytest.param("(555)123-4567", id="parenthesized-no-space"),
 ]
 
 
@@ -337,3 +316,52 @@ def test_issue_53_guard_non_phone_numbers_untouched(text):
     quietly start redacting dates, ZIP+4 codes, or identifiers.
     """
     assert PIIScrubber().scrub(text) == text
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        pytest.param("(call (555) 123-4567)", "(call [REDACTED])", id="inside-parentheses"),
+        pytest.param("Phone:(555) 123-4567,", "Phone:[REDACTED],", id="no-space-after-colon"),
+    ],
+)
+def test_issue_53_phone_wrapped_in_punctuation(text, expected):
+    """Only the number is redacted; surrounding punctuation is kept."""
+    assert PIIScrubber().scrub(text) == expected
+
+
+@pytest.mark.unit
+def test_issue_53_two_phones_in_one_string():
+    """Both numbers are redacted and detect() reports each with correct offsets."""
+    text = "Cell (555) 123-4567, office +1 555 987 6543."
+    scrubber = PIIScrubber()
+
+    assert scrubber.scrub(text) == "Cell [REDACTED], office [REDACTED]."
+
+    phones = [d for d in scrubber.detect(text) if d["type"] == "phone_us"]
+    assert [p["value"] for p in phones] == ["(555) 123-4567", "+1 555 987 6543"]
+    for p in phones:
+        assert text[p["start"] : p["end"]] == p["value"]
+
+
+@pytest.mark.unit
+def test_issue_53_phone_does_not_span_lines():
+    """Digit groups on separate lines are not joined into one phone number."""
+    text = "Room 555\n123 4567"
+
+    assert PIIScrubber().scrub(text) == text
+
+
+@pytest.mark.unit
+def test_issue_53_all_pii_types_in_one_string():
+    """Every pattern still fires when all PII types share a string, in pattern order."""
+    text = (
+        "Email jane@example.com, phone (555) 123-4567, "
+        "SSN 123-45-6789, home 42 Elm Rd. Skilled in Python."
+    )
+    scrubbed = PIIScrubber().scrub(text)
+
+    assert scrubbed == (
+        "Email [REDACTED], phone [REDACTED], " "SSN [REDACTED], home [REDACTED]. Skilled in Python."
+    )
