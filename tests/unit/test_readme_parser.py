@@ -15,10 +15,6 @@ class TestReadmeParser:
         """Create a ReadmeParser instance."""
         return ReadmeParser()
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #70 (manifest H-03): README parser fixture is indented, so it has no headings",
-    )
     def test_parse_standard_readme(self, parser, sample_readme_text):
         """Test parsing a standard README."""
         result = parser.parse(sample_readme_text)
@@ -28,9 +24,25 @@ class TestReadmeParser:
         assert result.source_type == "readme"
         assert result.metadata["source_type"] == "readme"
         assert "heading_count" in result.metadata
-        assert result.metadata["heading_count"] > 0
+        assert result.metadata["heading_count"] == 3
+        headings = parser._extract_heading_hierarchy(sample_readme_text)
+        assert [(heading["text"], heading["level"]) for heading in headings] == [
+            ("Weather App", 1),
+            ("Features", 2),
+            ("Tech Stack", 2),
+        ]
         assert "word_count" in result.metadata
         assert result.metadata["word_count"] > 0
+
+    def test_parse_indented_heading_as_plain_text(self, parser):
+        """Keep genuinely indented content out of the heading count."""
+        content = "    # code example\n    print('hello')\n"
+
+        result = parser.parse(content)
+
+        assert result.text == content
+        assert result.metadata["heading_count"] == 0
+        assert parser._extract_heading_hierarchy(content) == []
 
     def test_parse_readme_longer_than_10000_chars(self, parser):
         """Test parsing a README longer than 10,000 characters - full text preserved."""
