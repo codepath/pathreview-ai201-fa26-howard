@@ -53,7 +53,7 @@ The tests mix asynchronous and synchronous behavior, but the final assertions do
 
 ### Check-in 2 (end of week)
 
-**PR link:** PR_LINK_HERE
+**PR link:** [PR #95](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/95)
 
 **Branch:** `fix/65-review-service-async-mocks`
 
