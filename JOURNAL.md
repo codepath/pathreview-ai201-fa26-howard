@@ -29,7 +29,7 @@ I chose Tier 2 because it matches my experience. I have built and shipped multi-
 **Reproduction summary:**
 I checked out main, ran the app locally, and confirmed the review page has no share control and the API has no share route. Without a share feature, a summary can only be viewed by someone with account access.
 
-**PLAN.md link:** https://github.com/shemarieirons/pathreview-ai201-fa26-howard/blob/feature/40-copy-link-button/PLAN.md
+**PLAN.md link:** https://github.com/shemarieirons/pathreview-ai201-fa26-howard/blob/feat/40-share-review-link/PLAN.md
 
 **Walkthrough video (recommended):** "not recorded"
 
