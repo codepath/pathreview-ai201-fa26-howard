@@ -45,6 +45,10 @@ jobs:
         run: pytest tests/unit -v --tb=short
         env:
           LLM_PROVIDER: mock
+      - name: Run ingestion benchmark
+        run: pytest tests/benchmarks -v --tb=short
+        env:
+          LLM_PROVIDER: mock
 
   test-integration:
     runs-on: ubuntu-latest

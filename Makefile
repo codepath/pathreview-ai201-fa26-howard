@@ -1,4 +1,4 @@
-.PHONY: setup run test-unit test-integration test-all lint format typecheck check migrate seed reset-db eval clean
+.PHONY: setup run test-unit test-integration test-benchmark test-all lint format typecheck check migrate seed reset-db eval clean
 
 SHELL := /bin/bash
 
@@ -41,6 +41,9 @@ test-unit: ## Run unit tests only (~30 seconds)
 
 test-integration: ## Run integration tests only
 	$(PYTEST) tests/integration -v -m integration
+
+test-benchmark: ## Run performance benchmarks
+	$(PYTEST) tests/benchmarks -v -m benchmark
 
 test-all: ## Run full test suite
 	$(PYTEST) tests/ -v
