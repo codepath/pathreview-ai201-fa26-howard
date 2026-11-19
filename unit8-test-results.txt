@@ -1,0 +1,49 @@
+/workspaces/pathreview-ai201-fa26-howard/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform linux -- Python 3.14.2, pytest-9.2.0, pluggy-1.7.0 -- /workspaces/pathreview-ai201-fa26-howard/.venv/bin/python
+cachedir: .pytest_cache
+hypothesis profile 'default'
+benchmark: 5.3.1 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /workspaces/pathreview-ai201-fa26-howard
+configfile: pyproject.toml
+plugins: asyncio-1.4.1.post1, pytest_httpserver-1.2.0, cov-7.1.0, hypothesis-6.170.15, anyio-4.16.0, platformdirs-4.14.5, benchmark-5.3.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 32 items
+
+tests/unit/test_bias_detector.py::TestBiasDetector::test_dismissive_bootcamp_language_detected XFAIL [  3%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_bootcamp_lacks_rigor_detected XFAIL [  6%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_bootcamp_inadequate_training_detected PASSED [  9%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_self_taught_comparison_detected PASSED [ 12%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_positive_bootcamp_mention_not_flagged PASSED [ 15%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_neutral_bootcamp_mention_not_flagged PASSED [ 18%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_educational_background_positive_not_flagged PASSED [ 21%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_demographic_assumption_age_detected XFAIL [ 25%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_demographic_assumption_old_detected PASSED [ 28%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_demographic_assumption_background_detected PASSED [ 31%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_immigrant_developer_assumption_detected PASSED [ 34%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_international_developer_assumption_detected PASSED [ 37%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_clean_feedback_not_flagged PASSED [ 40%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_technical_feedback_not_flagged PASSED [ 43%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_development_suggestion_not_flagged PASSED [ 46%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_case_insensitive_detection PASSED [ 50%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_return_value_structure PASSED [ 53%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_unbiased_returns_empty_reason PASSED [ 56%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_biased_returns_reason PASSED [ 59%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_empty_text PASSED [ 62%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_whitespace_only PASSED [ 65%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_coding_bootcamp_variant XFAIL [ 68%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_online_course_bias_detected PASSED [ 71%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_developer_vs_programmer_distinction XFAIL [ 75%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_multiple_bias_indicators XFAIL [ 78%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_negative_educational_claim XFAIL [ 81%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_working_class_assumption PASSED [ 84%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_rich_poor_assumption XFAIL [ 87%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_foreign_developer_struggle_assumption PASSED [ 90%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_skill_assessment_not_biased PASSED [ 93%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_comparative_without_bias PASSED [ 96%]
+tests/unit/test_bias_detector.py::TestBiasDetector::test_assumption_vs_observation XFAIL [100%]
+
+======================== 23 passed, 9 xfailed in 0.34s =========================
