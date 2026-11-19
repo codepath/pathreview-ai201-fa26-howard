@@ -1,0 +1,351 @@
+# Contribution Journal
+
+## Unit 7 — Issue selection
+
+**Issue link:** https://github.com/codepath/pathreview-ai201-fa26-howard/issues/5
+
+**Issue title:** Add end-to-end ingestion test with a sample resume fixture
+
+**Tier:** [ ] Tier 1  [x] Tier 2  [ ] Tier 3
+
+**Problem summary:**
+The ingestion pipeline turns an uploaded resume into stored, searchable chunks,
+but its main entry point, `IngestionPipeline.ingest_resume` in
+`ingestion/pipeline.py`, has no test. The resume parser and the batch embedding
+processor each have unit tests, but nothing checks that the steps work together
+from parsing through chunking to embedding storage. So a break between those
+steps could slip through even with all the unit tests passing. A good fix adds
+an integration test in `tests/integration/test_ingestion_pipeline.py`. The test
+runs a real sample resume from `tests/fixtures/sample_resumes/` through the whole
+pipeline and checks that the returned `chunk_count` is correct.
+
+**Branch name:** test/5-ingestion-pipeline-e2e
+
+**Setup confirmation:** [x] App runs locally at localhost:5173
+
+**Cohort ledger:** [x] Issue added to cohort ledger
+
+### Selection notes: "Is this issue right for me?"
+
+**Part 1: Understanding the issue**
+
+- [x] I can explain the problem and the expected behavior in 2–3 sentences
+  without reading the issue.
+  Notes: `ingest_resume` connects parsing, chunking, embedding, and storage, but
+  no test runs those steps together. After the fix, a test feeds a sample resume
+  through the whole pipeline and checks the result.
+- [x] I've located the relevant files and confirmed they exist in the codebase.
+  Notes: `ingestion/pipeline.py` (`IngestionPipeline.ingest_resume`) and
+  `tests/fixtures/sample_resumes/` (`new_grad.md`, `mid_career.md`) exist.
+  `tests/integration/` exists but `test_ingestion_pipeline.py` does not yet, so
+  I'll be creating it. Labels: `ingestion`, `tests`, `enhancement`.
+- [x] I can describe a concrete before-and-after.
+  Notes: Before, a break between parsing, chunking, and embedding storage can
+  ship with every unit test passing. After, `pytest tests/integration` runs a
+  real resume end to end and fails if `chunk_count` is wrong or a step breaks.
+
+**Part 2: Tier fit**
+
+- [x] The tier is a realistic match for where I am right now.
+  Notes: I've worked in large codebases and contributed to open source before,
+  so a Tier 2 issue is a fair match for my skill level. This is a Tier 2 issue. It touches several modules (parser, chunking
+  strategy selector, batch embedding processor), but the change is a new test
+  file, not changes to production code, which keeps the risk down.
+
+**Part 3: Codebase readiness**
+
+- [x] I've found and read the specific code the issue references.
+  Notes: `ingest_resume` hashes the content into a `source_id`, calls
+  `_check_skip` (a DB lookup), then `ResumeParser.parse` →
+  `StrategySelector.chunk` → `BatchEmbeddingProcessor.process`, records the
+  source, and returns `IngestResult(chunk_count=len(chunks))`.
+- [x] I can write a rough plan for the fix.
+  Notes: Build an `IngestionPipeline` with a mock embedding provider (returning
+  one vector per chunk), a mock vector DB, and a mock DB session. The session
+  mock must make `.query().filter_by().first()` return `None`. Otherwise the
+  default `Mock` is truthy and the pipeline takes the "already ingested" skip
+  path with `chunk_count=0`. Load `new_grad.md`, run `ingest_resume`, then assert
+  `skipped is False`, `chunk_count > 0`, and that `chunk_count` matches the
+  number of chunks sent to the vector DB.
+- [x] I've found the test file for my module and read at least one test
+  end-to-end.
+  Notes: `tests/unit/test_batch_processor.py` uses `Mock()` fixtures for the
+  embedding provider and vector DB and is marked `@pytest.mark.unit`. My test
+  will follow that pattern in an integration-marked test.
+
+**Part 4: Scope and time**
+
+- [x] I've checked the issue comments and the ledger's Claims count, and I'm
+  fine with how many others are on this issue.
+  Notes: The only comment on issue #5 is my claim. I've added the issue to the
+  cohort ledger and checked its Claims count.
+- [x] I've estimated the time and I'm confident I can finish before the Unit 9
+  deadline.
+  Notes: The issue estimates 4–6 hours. The work is one new test file with no
+  production code changes.
+- [x] This issue has no open blockers or dependencies on other unresolved
+  issues.
+  Notes: The issue body has no "blocked by" references and none of its labels
+  mark it as blocked.
+
+**Verdict:** Ready to claim. Every box is checked. The scope is one new
+integration test file with no production code changes. That fits the Tier 2
+estimate of 4–6 hours and my experience, and I already have a plan, including
+mocking the DB session so the pipeline doesn't skip ingestion.
+
+## Unit 8 — Reproduction & solution planning
+
+**Reproduction commit link:** https://github.com/madelinegilmore/pathreview-ai201-fa26-howard/commit/e3080aa19fefd97a1cc1aa2e3352058db66e9662
+
+**Reproduction summary:**
+I confirmed that no test calls `IngestionPipeline.ingest_resume`, and that the
+unit suite covers 0% of `ingestion/pipeline.py`. I then ran
+`tests/fixtures/sample_resumes/new_grad.md` and `mid_career.md` through
+`ingest_resume` with mocked dependencies. The pipeline works (`chunk_count=1`,
+1 embedding call, 1 `vector_db.add`), but a plain `Mock()` DB session silently
+skips ingestion with `chunk_count=0`, so a naive test would never exercise it.
+
+**Reproduction steps:**
+
+1. Search the tests for the pipeline. Nothing references it, and
+   `tests/integration/` holds only `__init__.py`:
+
+   ```bash
+   grep -rn "ingest_resume\|IngestionPipeline" tests   # no matches
+   ```
+
+2. Measure coverage with the unit suite. Result: 375 passed, 53 xfailed.
+   `ingestion/pipeline.py` reports 105 statements, 105 missed, **0%** covered:
+
+   ```bash
+   .venv/bin/python -m pytest tests/unit -q --cov=ingestion --cov-report=term-missing
+   ```
+
+3. Run a fixture through the pipeline with a mock embedding provider (one
+   1536-dim vector per text), a mock vector DB, and a mock DB session:
+
+   | DB session mock | Result |
+   |---|---|
+   | plain `Mock()` | `skipped=True`, `chunk_count=0`, "Source already ingested". Parsing, chunking and embedding never run. |
+   | `.query().filter_by().first()` returns `None` | `skipped=False`, `chunk_count=1`. 5 sections parsed, 1 embed call, 1 `vector_db.add`. |
+
+   Both fixtures give the same result.
+
+**Where the gap lives:** `IngestionPipeline.ingest_resume` in
+`ingestion/pipeline.py`. Its skip check, `_check_skip`, runs
+`db_session.query(...).filter_by(...).first()`. The missing test belongs in
+`tests/integration/test_ingestion_pipeline.py`, which doesn't exist yet.
+
+**PLAN.md link:** https://github.com/madelinegilmore/pathreview-ai201-fa26-howard/blob/test/5-ingestion-pipeline-e2e/PLAN.md
+
+**Walkthrough video (recommended):** [link to your Loom video, ≤2 min — recommended, not graded]
+
+**Blockers or open questions:**
+- The pipeline's real `_check_skip` and `_record_ingested_source` are
+  placeholders (`query("IngestedSource")` and a log-only record). The test
+  should mock the DB session rather than use a real database. Confirm that's
+  acceptable for an "integration" test.
+- Resumes use the semantic chunker (~500-token target), so both fixtures come
+  out as 1 chunk. The test should assert that `chunk_count` equals the number of
+  stored embeddings, not a per-section count.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+All four PLAN.md sub-tasks are done and pushed to
+`test/5-ingestion-pipeline-e2e`, with one commit per step:
+
+1. Built mock fixtures for the embedding provider, vector DB, and DB session.
+   The session's dedupe lookup returns `None`, so the pipeline doesn't skip
+   ingestion.
+2. Wrote the happy-path test. Both sample resumes are parsed, chunked,
+   embedded, and stored. `chunk_count` matches the number of stored chunks, and
+   `source_id` is deterministic.
+3. Added the skip path and the two edge cases from PLAN.md: a failing dedupe
+   lookup, and an embedding provider error.
+4. Verified everything. 6 integration tests pass, and coverage of
+   `ingestion/pipeline.py` went from 0% to 61%, covering all of `ingest_resume`.
+   I also checked that the tests fail when the pipeline breaks: skipping
+   storage, dropping `profile_id`, or removing the skip check each made at
+   least one test fail.
+
+`make check`, `make test-unit`, `make test-integration`, and the frontend tests
+all pass locally. The PR title and description are drafted from the template.
+
+**Next steps:**
+- Open the draft PR against `codepath/pathreview-ai201-fa26-howard` and ask a
+  classmate or mentor to review it.
+- Address any feedback I agree with, confirm all five CI jobs are green, then
+  mark the PR ready for review.
+
+**Blockers:**
+- Open questions for reviewers:
+  - Is mocking the DB session, embedding provider, and vector DB acceptable for
+    an "integration" test?
+  - Should the "no tests collected" workaround in `.github/workflows/ci.yml` be
+    removed in this PR?
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/88
+
+**Branch:** `test/5-ingestion-pipeline-e2e`
+
+**What you built:**
+I added the first integration test for the ingestion pipeline. It runs real
+sample resumes through `IngestionPipeline.ingest_resume`, with the real parser,
+chunker, and batch embedding processor and only the external services mocked.
+It checks that every chunk the pipeline reports was embedded and stored with
+the right metadata. It also covers the "already ingested" skip path and the
+failure paths.
+
+**Tests added or updated:**
+`tests/integration/test_ingestion_pipeline.py` (new, 6 tests):
+- end-to-end ingestion of `new_grad.md` and `mid_career.md`;
+- deterministic `source_id`;
+- skipping an already-ingested source;
+- ingestion continuing when the dedupe lookup fails;
+- an embedding provider error propagating with nothing stored.
+
+No existing tests were changed and no xfail markers were removed. #5 isn't a
+seeded bug.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** Alexis Evans. Feedback: take out the part about journal entries.
+
+
+**PR Contents:**
+Summary
+
+Adds the first integration test for the ingestion pipeline. IngestionPipeline.ingest_resume connects the resume parser, the chunking strategy selector, and the batch embedding processor, but no test covered them together: the unit suite covered 0% of ingestion/pipeline.py. The new test runs both sample resumes through parsing, chunking, and embedding storage, and asserts on the returned chunk_count. The parser, chunker, and batch processor run for real. Only the external boundaries (embedding provider, vector DB, DB session) are mocked.
+
+Issue
+
+Closes #5
+
+Changes
+
+Add tests/integration/test_ingestion_pipeline.py (@pytest.mark.integration) with 6 tests:
+new_grad.md and mid_career.md are parsed, chunked, embedded, and stored. chunk_count equals the number of vector_db.add calls, and each stored chunk carries the right source_id, source_type, profile_id, and filename.
+The same content yields the same source_id.
+An already-ingested source is skipped with nothing embedded or stored.
+A failing dedupe lookup is logged and ingestion still completes.
+An embedding provider error propagates and nothing is stored.
+The DB session fixture makes the dedupe lookup return None. A bare Mock() returns a truthy Mock, which makes the pipeline skip ingestion, so a naive test would pass without exercising anything.
+No production code changes.
+Testing
+
+
+CI is green on this PR (all five jobs) (required for review)
+
+Unit tests pass (make test-unit): 375 passed, 53 xfailed, unchanged from main
+
+Integration tests pass (make test-integration): 6 passed
+
+Linter passes (make lint)
+
+Type checker passes (make typecheck)
+
+New/updated tests cover the changes: ingestion/pipeline.py coverage goes from 0% to 61%, with all of ingest_resume covered. The remaining misses are ingest_readme and ingest_repo, out of scope here.
+[NA] If this fixes a seeded bug: removed its @pytest.mark.xfail marker (and any
+matching suppression in pyproject.toml). N/A: Add end-to-end ingestion test with a sample resume fixture #5 adds a test and is not a seeded bug, so no marker was removed.
+I also checked that the tests fail when the pipeline breaks. Temporarily skipping embedding and storage, dropping profile_id from the metadata, or removing the skip check each made at least one test fail. The frontend tests (npm test -- --run) pass locally too.
+
+Screenshots / Demo
+<img width="2022" height="702" alt="image" src="https://github.com/user-attachments/assets/c64fe6aa-af1d-4445-a079-ea34868ef7f9" />
+
+
+Notes for Reviewers
+
+Mocks vs. real services: the integration marker says "require Docker services", but _check_skip and _record_ingested_source are placeholders (query("IngestedSource"), a log-only record), and real embeddings would need an API key in CI. So this test mocks the DB session, embedding provider, and vector DB. Is that the right boundary, or would you prefer a real in-memory ChromaDB collection?
+CI shim: the test-integration job in .github/workflows/ci.yml treats pytest exit code 5 ("no tests collected") as success, with a comment saying to delete it once tests/integration/ holds a test. This PR adds that first test. Should I remove the shim here or in a follow-up?
+Open question, not changed here: BatchEmbeddingProcessor.process pairs chunks with vectors using zip, so a provider returning fewer vectors than texts would silently store fewer chunks while ingest_resume still reports len(chunks). Both current providers return one vector per text, so this isn't reachable today. Is it intended, or should process raise?
+Expected chunk count: both fixtures are under ~300 tokens, so the semantic chunker (~500-token target) produces one chunk each. The test compares chunk_count to stored chunks rather than hard-coding a number.
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [x] Yes  [ ] No — still awaiting review
+
+**Summary of feedback:**
+Alexis Evans reviewed my draft PR (#88) and suggested taking out the part of
+the description about journal entries. My draft had a "Course notes" bullet
+explaining that `JOURNAL.md` and `PLAN.md` were coursework files. That's
+noise for maintainers reviewing the test, and it doesn't belong in the PR.
+No maintainer review has come in on GitHub yet.
+
+**How you responded:**
+I agreed and removed the journal and course-notes bullet from the PR
+description. The rest of the "Notes for Reviewers" stayed, since those are
+real questions for maintainers:
+- whether mocking is acceptable for an integration test;
+- whether to remove the "no tests collected" workaround in `ci.yml`;
+- the `zip` behavior in `BatchEmbeddingProcessor.process`.
+
+After confirming all five CI jobs were green, I marked the PR ready for
+review.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Writing a test that actually tests something. My first instinct was a plain
+`Mock()` for the DB session. That makes the pipeline's dedupe check return a
+truthy object, so `ingest_resume` returns `skipped=True, chunk_count=0` and
+never parses, chunks, or embeds anything. A test like that would have passed
+and proved nothing. To trust my assertions, I had to break the pipeline on
+purpose (skip storage, drop `profile_id`, remove the skip check) and confirm
+the tests failed. I also didn't expect how much process surrounds a small
+code change: issue claiming, the ledger, the PR template, CI on a fork,
+conventional commits, and xfail rules.
+
+**What did you learn about working in a large codebase?**
+Most of the work is reading, not writing. My final change was one new test
+file, but getting there meant tracing `ingest_resume` through the parser,
+the chunking strategy selector, and the batch embedding processor, and
+learning that resumes use the semantic chunker (~500-token chunks). That's
+why both fixtures produce exactly one chunk. In my own projects I decide
+what "correct" means. Here I had to find the intended behavior in
+docstrings, CONTRIBUTING.md, and the CI config, and ask maintainers when the
+code was ambiguous instead of assuming. The CI file even had a comment
+waiting for someone to add the first integration test.
+
+**How did AI tools help — and where did they fall short?**
+AI was most useful for navigating unfamiliar code fast:
+- tracing the call chain;
+- measuring coverage (0% on `ingestion/pipeline.py` before my change);
+- spotting the `Mock()` skip trap;
+- checking my test against the project's conventions and all five CI checks
+  locally.
+
+It fell short in a few places:
+- It described the `zip` behavior in `BatchEmbeddingProcessor` as a bug.
+  When I asked "are we sure this isn't intended?", the evidence turned out
+  weaker. The docstring defines `chunk_count` as chunks *created*, and both
+  real embedding providers always return one vector per text. So it's an open
+  question for maintainers, not a bug. I learned to push back on confident
+  claims and ask for evidence.
+- It couldn't do the human parts: claiming the issue, updating the cohort
+  ledger, opening the PR on GitHub, or getting real feedback from a person.
+- Its drafts weren't in my voice. I still had to own the reasoning and
+  wording in my journal and PR.
+
+**What would you do differently if you started over?**
+I'd open the draft PR and ask for feedback earlier. My Check-in 1 landed a
+day after the Wednesday target, and the review was squeezed into the end of
+the week. I'd also ask maintainers my open questions on the issue during
+planning: mocks versus real services, and the CI workaround. Then they'd be
+settled before I wrote the test instead of sitting in the PR description.
+
+**What are you most proud of from this module?**
+That my tests can fail. I didn't just get them green. I proved they catch
+real breakage, and they took `ingestion/pipeline.py` from 0% to 61% coverage,
+including all of `ingest_resume`. This is also the first integration test in
+the repo, filling the gap the CI workflow was waiting on.
