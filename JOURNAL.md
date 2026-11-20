@@ -86,3 +86,34 @@ I added a session-scoped autouse fixture in `tests/conftest.py` that calls the a
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No review came in. My instructor told us to skip the peer-review step this cycle because it's close to the end of classes, so I didn't request a draft review.
+
+**How you responded:**
+No feedback to respond to. If a reviewer comments after I submit, I'll reply on the PR and make any changes I agree with.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Getting the environment working took longer than writing the fix. My `.venv` still pointed at an old folder path, so `make setup` failed with a launcher error and `pytest` couldn't import `structlog` or `tiktoken`. Then `pre-commit` wasn't found when I committed from GitHub Desktop, and the database migration failed with `ConnectionRefusedError` because Docker wasn't running yet. The setup guide also told me to set an OpenRouter key that my `.env.example` didn't have, so I had to check the guide against the actual repo instead of trusting it.
+
+**What did you learn about working in a large codebase?**
+In my own projects I know where everything is, but here the fix depended on reading code I didn't write. Issue #66 said log assertions fail "suite-wide," but `grep` showed only one test used `caplog`. I also found that `configure_logging()` in `core/logging.py` already routes structlog through the standard library, but it's only called from `scripts/seed_db.py`, so the tests never ran it. That turned a vague "configure structlog" task into adding one fixture in `tests/conftest.py`. I also learned that a `strict=True` xfail marker has to be removed in the same change as the fix, or the unexpected pass counts as a failure.
+
+**How did AI tools help — and where did they fall short?**
+AI helped most with reading error output, like spotting the stale venv path, and with explaining why structlog's default output never reaches `caplog`. It also helped me structure the plan and journal. Where it fell short: my first plan assumed I'd need to write new structlog configuration and that `configure_logging()` ran at app startup. Reading `core/logging.py` and `conftest.py` myself and running `grep` showed that was wrong, so I had to correct the plan. I learned to treat AI suggestions as a hypothesis and check them against the real files and command output.
+
+**What would you do differently if you started over?**
+I'd verify my environment first, by running the full test suite right after `make setup`, before choosing an issue or writing anything. That would have caught the broken venv and missing dependencies in minutes. I'd also read the code an issue points to before claiming it, and I'd start the plan from what the files actually contain. I'd also keep unrelated edits, like my `docker-compose.yml` change, out of the working branch from the start.
+
+**What are you most proud of from this module?**
+I'm most proud of tracing the root cause myself instead of just following the issue text. I checked where `configure_logging()` was called, found that tests never ran it, and ended up with a small, focused fix that made the test pass and left the other 375 unit tests alone.
