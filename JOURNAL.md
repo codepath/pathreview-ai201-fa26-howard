@@ -55,3 +55,34 @@ pytest tests/unit/test_batch_processor.py::TestBatchEmbeddingProcessor::test_emp
 
 - Not sure yet whether cache_logger_on_first_use=True affects loggers created before the test fixture runs; I'll check this in Unit 9.
 - `configure_logging()` is only called from `scripts/seed_db.py`, so the API itself doesn't set up logging either. I'm not sure if that's intended, but I'm keeping the fix scoped to the tests as the issue describes.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Reproduced the failure and finished PLAN.md in Unit 8. Since then I read `core/logging.py` and `tests/conftest.py`, and found that `configure_logging()` already routes structlog through the standard library but is only called from `scripts/seed_db.py`, so the test suite never runs it. That narrowed the fix to `tests/conftest.py`. Sub-tasks 1 (confirm callers of `configure_logging`) is done; I hadn't started the fixture yet.
+
+**Next steps:**
+Add a session-scoped autouse fixture in `tests/conftest.py` that calls `configure_logging()`, remove the `xfail(strict=True)` marker from `test_empty_chunks_list_returns_empty`, run `make check` and `make test-unit`, and open a draft PR.
+
+**Blockers:**
+None.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/103#issue-6501934307
+
+**Branch:** `fix/66-structlog-caplog`
+
+**What you built:**
+I added a session-scoped autouse fixture in `tests/conftest.py` that calls the app's existing `configure_logging()` and then resets structlog's defaults when the session ends. Before this, tests ran with structlog's unconfigured default, which printed to the terminal without creating standard-library log records, so `caplog` captured nothing. Now structlog events go through stdlib logging and `caplog` sees them.
+
+**Tests added or updated:**
+`tests/unit/test_batch_processor.py`: I removed the `@pytest.mark.xfail(strict=True)` marker from `test_empty_chunks_list_returns_empty`, which now passes and checks that the "Empty chunks list" warning reaches `caplog`. `tests/conftest.py` contains the fixture itself. `make test-unit` gives 376 passed and 52 xfailed.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none
