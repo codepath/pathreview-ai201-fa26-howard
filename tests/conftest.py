@@ -1,6 +1,23 @@
 """Shared test fixtures for PathReview."""
 
+from collections.abc import Iterator
+
 import pytest
+import structlog
+
+from core.logging import configure_logging
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _route_structlog_to_stdlib() -> Iterator[None]:
+    """Configure structlog to log through the standard library during tests.
+
+    Without this, structlog uses its unconfigured default and prints straight
+    to the terminal, so pytest's ``caplog`` never receives any log records.
+    """
+    configure_logging()
+    yield
+    structlog.reset_defaults()
 
 
 @pytest.fixture
