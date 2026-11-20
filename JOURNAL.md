@@ -22,7 +22,7 @@ I chose Tier 2 because it matches my experience. I have built and shipped multi-
 
 **Cohort ledger:** [x] Issue added to cohort ledger
 
-## Unit 8 - Reproduction & solution planning
+# Unit 8 - Reproduction & solution planning
 
 **Reproduction commit link:** https://github.com/shemarieirons/pathreview-ai201-fa26-howard/commit/e339f70
 
@@ -36,7 +36,7 @@ I checked out main, ran the app locally, and confirmed the review page has no sh
 **Blockers or open questions:**
 None.
 
-## Unit 9 - Solution building & PR submission
+# Unit 9 - Solution building & PR submission
 
 ### Check-in 1 (mid-week)
 
@@ -120,3 +120,35 @@ Not included
 - **Migration:** `003_add_review_share_links.py` adds one table. Please confirm it applies cleanly on top of the current head.
 - **Link reuse:** creating a link for a review that already has a valid one returns the existing link instead of making a new one. An expired link is replaced with a new one.
 - **First fork PR:** workflows may need a maintainer to approve the run. All five CI jobs should pass once released.
+
+## Unit 10 - Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No - still awaiting review
+
+**Summary of feedback:**
+No reviewer comments had arrived on my pull request as of November 20, 2026. The PR is open and marked ready for review, and all five required CI checks (lint, typecheck, test-unit, test-integration, frontend) passed.
+
+**How you responded:**
+Not applicable yet. If comments arrive, I will respond on the PR and update this entry.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The code was not the hardest part. The process requirements were. My first PLAN.md commit was still the blank template, so it scored 0 of 8 content points in Unit 8 and I had to rewrite it with specific files, sub-tasks, risks, and edge cases. In Unit 9 I found that my branch name, feature/40-copy-link-button, did not follow CONTRIBUTING.md, which only allows fix, feat, test, docs, refactor, perf, and chore as types. I renamed it to feat/40-share-review-link and then had to update every link in JOURNAL.md that pointed to the old name. The issue was also bigger than the title I recorded in Unit 7 suggested: it said "Copy link button," but the body asked for a no-login, read-only link that expires after 30 days. That meant a migration, a model, a service, two routes, schemas, and two frontend pages.
+
+**What did you learn about working in a large codebase?**
+Contributing to someone else's project means following rules you did not write, and those rules are part of the work. CONTRIBUTING.md specified Conventional Commits with scopes, Google-style docstrings, a branch naming format, and five required CI jobs. The suite also contains 53 deliberately failing xfail tests, so "green" did not mean everything passes, and I had to check that none were tied to my issue. My feature touched about 20 files across the database migration, model, service, routes, schemas, and frontend, so I had to match existing patterns instead of inventing my own. I also hit an environment problem: macOS ignores filename case, so Git was tracking Journal.md while the assignment required JOURNAL.md. I only caught it when I read the git file list, and I had to fix it with git mv.
+
+**How did AI tools help, and where did they fall short?**
+AI was most useful for checking my work against the rubrics and CONTRIBUTING.md and explaining the Git steps for the pull request. It fell short in specific ways. It drafted PLAN.md and the PR description without seeing my code, so every file role, table name, status code, and button label had to be checked against the real files.
+
+**What would you do differently if you started over?**
+I would read CONTRIBUTING.md before creating the branch or the first commit, and I would write and commit PLAN.md before writing code. In this project my implementation commit (5225b00) added about 1,500 lines across 20 files before the reproduction commit or PLAN.md existed, so the plan ended up documenting the code instead of guiding it. I would also check the issue body against its title during Unit 7 instead of discovering the full scope later. Finally, I would open a draft PR earlier and ask for peer feedback. I did not request any on this one.
+
+**What are you most proud of from this module?**
+I am most proud of how the feature handles privacy and expiry. Expiry is enforced on the server on every request, and my tests check an expired token returning 410, invalid and empty tokens returning 404, and a link lasting exactly 30 days. The public view returns only status, overall score, sections, and expiry date, and a test confirms it leaves out the owner's email, user ID, review ID, and profile ID. I also got a full-stack change, from the migration through the UI, passing all five required CI checks on my PR.
+
