@@ -24,7 +24,7 @@ from fastapi.testclient import TestClient
 from api.main import app
 from api.middleware.auth import get_current_user
 from core.database import get_db
-from core.services.review_service import process_review
+from core.services.review_service import NO_CONTENT_ERROR, process_review
 
 
 def _empty_profile():
@@ -101,25 +101,19 @@ def test_post_reviews_rejects_profile_with_no_ingested_content():
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "#36: process_review() still marks an empty profile's review 'complete' "
-        "with placeholder feedback. Remove this marker once the service guards it."
-    ),
-)
 async def test_process_review_does_not_complete_review_for_empty_profile():
-    """Repro, service level: the background job fakes a successful review.
+    """Regression, service level: the background job must not fake a review.
 
-    Observed: status == "complete", 3 hardcoded sections, overall_score == 0.81.
+    Before the fix: status == "complete", 3 hardcoded sections, overall_score == 0.81.
+    After the fix: the review is marked "failed" with an error_message.
     """
     profile = _empty_profile()
     review = _pending_review(profile.id)
 
     db = AsyncMock()
     db.add = Mock()
-    db.execute = AsyncMock(side_effect=[_result(review), _result(profile)])
+    # SELECT review, SELECT profile, then "no ingested_sources rows".
+    db.execute = AsyncMock(side_effect=[_result(review), _result(profile), _result(None)])
 
     await process_review(db, review.id, profile.id)
 
@@ -127,3 +121,44 @@ async def test_process_review_does_not_complete_review_for_empty_profile():
         f"review was marked complete with sections={review.sections!r} "
         f"overall_score={review.overall_score!r} although no content was ingested"
     )
+    assert review.status == "failed"
+    assert review.error_message == NO_CONTENT_ERROR
+    assert review.sections is None
+    assert review.overall_score is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_process_review_treats_whitespace_only_fields_as_empty():
+    """A blank PDF ("\\n\\n") or whitespace-only fields give nothing to review."""
+    profile = _empty_profile()
+    profile.resume_text = "\n\n\n"
+    profile.github_username = "   "
+    profile.portfolio_url = " "
+    review = _pending_review(profile.id)
+
+    db = AsyncMock()
+    db.add = Mock()
+    db.execute = AsyncMock(side_effect=[_result(review), _result(profile), _result(None)])
+
+    await process_review(db, review.id, profile.id)
+
+    assert review.status == "failed"
+    assert review.error_message == NO_CONTENT_ERROR
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_process_review_allows_previously_ingested_sources():
+    """Empty profile fields but existing ingested_sources rows still get reviewed."""
+    profile = _empty_profile()
+    review = _pending_review(profile.id)
+
+    db = AsyncMock()
+    db.add = Mock()
+    db.execute = AsyncMock(side_effect=[_result(review), _result(profile), _result(uuid4())])
+
+    await process_review(db, review.id, profile.id)
+
+    assert review.status == "complete"
+    assert review.error_message is None

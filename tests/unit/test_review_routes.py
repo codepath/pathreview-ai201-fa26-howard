@@ -69,6 +69,23 @@ class TestCreateReviewRoute:
         # The route actually consulted ingested_sources rather than short-circuiting.
         mock_db.execute.assert_awaited_once()
 
+    @pytest.mark.parametrize("field", ["resume_text", "github_username", "portfolio_url"])
+    @pytest.mark.parametrize("blank", [None, "", "   ", "\n\n"])
+    def test_blank_source_fields_return_422(self, client, mock_db, field, blank):
+        """Empty or whitespace-only fields (e.g. a scanned PDF's text) are not content."""
+        profile = _make_profile(**{field: blank})
+
+        with (
+            patch("api.routes.reviews.get_profile", AsyncMock(return_value=profile)),
+            patch("api.routes.reviews.create_review", AsyncMock()) as create_review,
+            patch("api.routes.reviews.process_review", AsyncMock()) as process_review,
+        ):
+            response = client.post("/reviews", json={"profile_id": profile.id})
+
+        assert response.status_code == 422
+        create_review.assert_not_awaited()
+        process_review.assert_not_called()
+
     def test_missing_profile_returns_404(self, client):
         """A profile that doesn't exist (or isn't the user's) returns 404, not 500."""
         with (
