@@ -12,6 +12,8 @@ from core.models.review import Review
 
 log = structlog.get_logger()
 
+NO_CONTENT_ERROR = "No ingested content to review"
+
 
 async def create_review(
     db,
@@ -31,6 +33,58 @@ async def create_review(
     await db.commit()
     await db.refresh(review)
     return review
+
+
+def _has_text(value: str | None) -> bool:
+    """Return True if ``value`` contains at least one non-whitespace character.
+
+    Args:
+        value: A profile field such as ``resume_text`` or ``github_username``.
+
+    Returns:
+        False for ``None``, ``""`` and whitespace-only strings (for example the
+        ``"\\n\\n"`` text extracted from a scanned, image-only PDF).
+    """
+    return bool(value and value.strip())
+
+
+async def _profile_has_ingested_sources(db, profile_id: UUID) -> bool:
+    """Return True if at least one ``ingested_sources`` row exists for the profile.
+
+    Args:
+        db: Async database session.
+        profile_id: ID of the profile to check.
+
+    Returns:
+        Whether the profile has previously ingested content.
+    """
+    stmt = select(IngestedSource.id).where(IngestedSource.profile_id == profile_id).limit(1)
+    result = await db.execute(stmt)
+    return result.scalars().first() is not None
+
+
+async def profile_has_reviewable_content(db, profile: Profile) -> bool:
+    """Return True if the review pipeline has anything to work with for a profile.
+
+    A profile is reviewable if it has a source the pipeline can ingest (resume
+    text, GitHub username, or portfolio URL) or previously ingested sources.
+    Whitespace-only fields do not count as content.
+
+    Args:
+        db: Async database session.
+        profile: The profile to check.
+
+    Returns:
+        True if a review can be produced from the profile's content.
+    """
+    if (
+        _has_text(profile.resume_text)
+        or _has_text(profile.github_username)
+        or _has_text(profile.portfolio_url)
+    ):
+        return True
+
+    return await _profile_has_ingested_sources(db, profile.id)
 
 
 async def get_review(
@@ -95,6 +149,10 @@ async def process_review(
     5. Run safety checks on output
     6. Set status="complete", store sections in review.sections
     7. On exception: set status="failed", log error
+
+    If ingestion finds nothing and the profile has no previously ingested
+    sources, the review is marked "failed" with ``error_message`` set instead
+    of running agent orchestration, RAG, and safety checks.
     """
     try:
         # Get the review
@@ -132,6 +190,18 @@ async def process_review(
             review_id=str(review_id),
             sources_count=len(ingestion_results),
         )
+
+        # Guard: don't invent feedback when there is nothing to review (#36).
+        # The route rejects empty profiles up front, but content can be removed
+        # between POST /reviews and this job running.
+        if not ingestion_results and not await _profile_has_ingested_sources(db, profile.id):
+            log.warning("review_no_content", review_id=str(review_id), profile_id=str(profile_id))
+            review.status = "failed"
+            review.error_message = NO_CONTENT_ERROR
+            review.updated_at = datetime.utcnow()
+            db.add(review)
+            await db.commit()
+            return
 
         # Step 3: Run agent orchestration
         agent_output = await _run_agent_orchestration(profile, ingestion_results)
@@ -203,7 +273,7 @@ async def _run_ingestion_pipeline(db, profile: Profile) -> list[dict]:
     sources = []
 
     # Ingest from GitHub if available
-    if profile.github_username:
+    if _has_text(profile.github_username):
         try:
             # Placeholder: actual GitHub ingestion logic
             github_data = {
@@ -228,7 +298,7 @@ async def _run_ingestion_pipeline(db, profile: Profile) -> list[dict]:
             )
 
     # Ingest from portfolio URL if available
-    if profile.portfolio_url:
+    if _has_text(profile.portfolio_url):
         try:
             # Placeholder: actual portfolio ingestion logic
             portfolio_data = {
@@ -253,7 +323,7 @@ async def _run_ingestion_pipeline(db, profile: Profile) -> list[dict]:
             )
 
     # Ingest from resume if available
-    if profile.resume_text:
+    if _has_text(profile.resume_text):
         try:
             resume_data = {
                 "source_type": "resume",
