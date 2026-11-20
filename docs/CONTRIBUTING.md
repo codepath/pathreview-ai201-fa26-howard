@@ -13,13 +13,14 @@ Thank you for contributing to PathReview! This guide explains our development wo
 
 Create a branch from `main` using this format:
 
-```
+```txt
 <type>/<issue-number>-<short-description>
 ```
 
 Where `<issue-number>` is the GitHub issue number (the number shown under the issue title in the tracker — e.g., `#54`).
 
 Examples:
+
 - `fix/54-resume-section-whitespace`
 - `feat/26-safety-event-health-check`
 - `test/44-review-service-coverage`
@@ -31,7 +32,7 @@ Types: `fix`, `feat`, `test`, `docs`, `refactor`, `perf`, `chore`
 
 We use [Conventional Commits](https://www.conventionalcommits.org/). Every commit message must follow this format:
 
-```
+```txt
 <type>(<scope>): <description>
 
 [optional body]
@@ -44,7 +45,8 @@ We use [Conventional Commits](https://www.conventionalcommits.org/). Every commi
 **Scopes:** `ingestion`, `rag`, `agent`, `safety`, `api`, `frontend`
 
 **Examples:**
-```
+
+```md
 fix(ingestion): handle leading whitespace in resume section detection
 
 Section headings with leading whitespace were not recognized, so their
@@ -53,7 +55,7 @@ content was silently dropped. Strip the line before matching headings.
 Fixes #54
 ```
 
-```
+```md
 test(agent): add unit tests for readme_scorer tool
 ```
 
