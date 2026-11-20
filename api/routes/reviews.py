@@ -42,8 +42,11 @@ async def create_review_endpoint(
             )
 
         if not await profile_has_reviewable_content(db, profile):
+            # Literal 422: HTTP_422_UNPROCESSABLE_ENTITY is deprecated in recent
+            # Starlette, and HTTP_422_UNPROCESSABLE_CONTENT is missing from the
+            # older versions that fastapi>=0.109 still allows.
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=422,
                 detail=(
                     "Profile has no ingested content to review. "
                     "Upload a resume or add a GitHub username or portfolio URL first."
