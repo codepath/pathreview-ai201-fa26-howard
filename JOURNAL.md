@@ -69,3 +69,54 @@ I added expiring, read-only share links for review summaries. A logged-in user c
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+## PR Description
+## Summary
+Adds expiring, read-only share links for review summaries. An authenticated user can generate a share link for a completed review from the review page using the Copy link button. Anyone with the link can open a read-only public summary without logging in, until the link expires 30 days after creation. The public view exposes only the status, overall score, sections, and expiry date, and omits identifiers such as owner email, user ID, review ID, and profile ID. Expiry and token validation are enforced on the server for every request, not only in the UI.
+
+## Issue
+Closes https://github.com/codepath/pathreview-ai201-fa26-howard/issues/40
+
+Note: the issue title mentions a "Copy link" button, but the issue body asks for a no-login, read-only share link that expires after 30 days. This PR implements the full behavior described in the body, including the Copy link button.
+
+## Changes
+- Added the `ReviewShareLink` model (`core/models/review_share.py`), a relationship on `Review`, and Alembic migration `003_add_review_share_links.py`
+- Added `core/services/share_service.py`: creates a share link for a completed review, reuses an existing valid link, creates a new link when the old one has expired, sets expiry to exactly 30 days, and resolves tokens (expired returns 410, unknown or empty returns 404, incomplete review cannot be shared)
+- Added an authenticated create route in `api/routes/reviews.py` and a public read-only route in `api/routes/share.py`, registered in `api/main.py`
+- Added public and share response schemas in `api/schemas/review.py` that exclude private fields
+- Frontend: `shareService.ts` API calls, a Copy link button with confirmation on `ReviewPage.tsx`, a new `SharedReviewPage.tsx` (read-only view with an expired-link state), a route in `App.tsx`, and shared types in `types/index.ts`
+- Added tests: `tests/unit/test_share_service.py`, `tests/unit/test_share_routes.py`, `ReviewPage.test.tsx`, `SharedReviewPage.test.tsx`, and `shareService.test.ts`
+
+## Testing
+- [x] **CI is green on this PR (all five jobs)** - required for review
+- [x] Unit tests pass (`make test-unit`)
+- [x] Integration tests pass (`make test-integration`)
+- [x] Linter passes (`make lint`)
+- [x] Type checker passes (`make typecheck`)
+- [x] New/updated tests cover the changes
+- [ ] If this fixes a seeded bug: removed its `@pytest.mark.xfail` marker (and any
+      matching suppression in `pyproject.toml`)
+
+Local results: `make check` is clean. `make test-unit` gives 394 passed and 53 xfailed, including 19 new tests for the share service and routes. Frontend tests (`npm test -- --run`) give 29 passed across 5 files.
+
+This is a new feature, not a seeded bug, so no xfail marker is tied to it and none was removed.
+
+**Manual verification steps:**
+1. Apply the migration and start the app: `alembic upgrade head`, then start the API and frontend (frontend at http://localhost:5173).
+2. Log in with the test credentials from the docs and open a completed review.
+3. Click **Copy link**. A share URL is created and copied, and a confirmation message appears.
+4. Open the copied URL in a private or incognito window without logging in. The read-only summary loads, with no edit controls and no private fields such as owner email, user ID, review `id`, or `profile_id`.
+5. Change the last characters of the token in the URL and reload. A not-found message appears and the page does not crash.
+6. To test expiry, set `expires_at` to a past date on that link's row in `review_share_links` and reload the shared URL. The expired-link message appears.
+7. Try to share a review that is not completed. The request is rejected with 400 ("Only completed reviews can be shared") and no link is created.
+8. Click **Copy link** again on a review that already has a valid link. The same link is returned.
+
+## Screenshots / Demo
+Not included
+
+## Notes for Reviewers
+- **Privacy:** please check the public schema in `api/schemas/review.py` and the public route in `api/routes/share.py`. They are meant to return only the summary fields and nothing identifying the owner. `test_share_service.py` has tests for this.
+- **Expiry:** it is enforced server-side in `share_service.py` on every request, with the expiry set to exactly 30 days at creation.
+- **Migration:** `003_add_review_share_links.py` adds one table. Please confirm it applies cleanly on top of the current head.
+- **Link reuse:** creating a link for a review that already has a valid one returns the existing link instead of making a new one. An expired link is replaced with a new one.
+- **First fork PR:** workflows may need a maintainer to approve the run. All five CI jobs should pass once released.
