@@ -38,3 +38,34 @@ With the stack running, `curl -i localhost:8000/health` returns `503` with `"pos
 
 **Blockers or open questions:**
 After my fix `/health` will still return 503 because Redis is also reported unhealthy (issue #62, `settings.redis_host`). I need to verify my fix via `dependencies.postgres` rather than the status code, and confirm with the course team that #62 stays a separate issue.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Plan steps 1–3 are done. I confirmed the baseline (the strict-xfail test and `postgres: "unhealthy"` on `/health`), wrapped the probe in `text()` in `api/routes/health.py`, removed the #61 xfail marker, and added a DB-down test. The xfail test needed a fix of its own: it patched `core.config.settings.redis_host` with `create=True`, which pydantic rejects, so I patch the whole `settings` object instead.
+
+**Next steps:**
+Run `make check` and `make test-unit`, verify against the live stack, open the PR, and ask for review.
+
+**Blockers:**
+None. Redis (#62) still makes the overall `/health` status 503, so I verify using `dependencies.postgres`.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/105
+
+**Branch:** `fix/61-health-check-sql-text`
+
+**What you built:**
+The `/health` Postgres probe now runs `db.execute(text("SELECT 1"))` instead of a raw string, so SQLAlchemy 2.x accepts it and Postgres is reported healthy when reachable and unhealthy only when the query actually fails.
+
+**Tests added or updated:**
+`tests/unit/test_health.py`: removed the #61 strict-xfail marker from the "DB reachable reports healthy" test, and added a "DB down" test (`OperationalError` gives `postgres == "unhealthy"` and a 503 `HTTPException`). Both tests patch Redis settings so they don't depend on #62.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes (377 passed, 53 xfailed)
+
+**Draft PR feedback received from:** none
