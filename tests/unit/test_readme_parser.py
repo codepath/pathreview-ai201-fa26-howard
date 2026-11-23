@@ -1,5 +1,7 @@
 """Tests for readme_parser.py"""
 
+import textwrap
+
 import pytest
 
 from ingestion.parsers.base import ParseResult
@@ -131,10 +133,6 @@ class TestReadmeParser:
 
         assert "Content must be a string or bytes" in str(exc_info.value)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #71 (manifest H-04): heading hierarchy fixture is indented, so it has no headings",
-    )
     def test_extract_heading_hierarchy(self, parser):
         """Test heading hierarchy extraction."""
         markdown = """
@@ -150,7 +148,9 @@ class TestReadmeParser:
         ## Another Section
         Final content
         """
-        headings = parser._extract_heading_hierarchy(markdown)
+        # The string above is indented to match the code, so every line starts with
+        # spaces and none of them are valid headings. dedent strips that indent.
+        headings = parser._extract_heading_hierarchy(textwrap.dedent(markdown))
 
         assert isinstance(headings, list)
         assert len(headings) > 0
@@ -159,6 +159,37 @@ class TestReadmeParser:
         assert 1 in levels
         assert 2 in levels
         assert 3 in levels
+
+    def test_extract_heading_hierarchy_order_and_text(self, parser):
+        """Test headings come back in document order with the right level and text."""
+        markdown = """
+        # Main Title
+        Some content
+
+        ## Subsection
+        More content
+
+        ### Sub-subsection
+        Even more content
+
+        ## Another Section
+        Final content
+        """
+        headings = parser._extract_heading_hierarchy(textwrap.dedent(markdown))
+
+        assert [(h["level"], h["text"]) for h in headings] == [
+            (1, "Main Title"),
+            (2, "Subsection"),
+            (3, "Sub-subsection"),
+            (2, "Another Section"),
+        ]
+
+    def test_extract_heading_hierarchy_ignores_indented_lines(self, parser):
+        """Test that a line indented like a code block is not treated as a heading."""
+        markdown = "# Real Heading\n\n        # indented, so this is code\n"
+        headings = parser._extract_heading_hierarchy(markdown)
+
+        assert [h["text"] for h in headings] == ["Real Heading"]
 
     def test_extract_heading_hierarchy_no_headings(self, parser):
         """Test heading extraction from text with no headings."""
