@@ -70,7 +70,7 @@ class TestFaithfulnessChecker:
     def test_empty_context_chunks_returns_zero(self, checker):
         """Test empty context chunks returns 0.0."""
         feedback = "Some feedback"
-        context_chunks = []
+        context_chunks: list[dict] = []
 
         score = checker.check(feedback, context_chunks)
 
@@ -79,7 +79,7 @@ class TestFaithfulnessChecker:
     def test_both_empty_returns_zero(self, checker):
         """Test both empty returns 0.0."""
         feedback = ""
-        context_chunks = []
+        context_chunks: list[dict] = []
 
         score = checker.check(feedback, context_chunks)
 
@@ -222,10 +222,6 @@ class TestFaithfulnessChecker:
         assert isinstance(supported, bool)
         # Need at least 2 meaningful tokens for support
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #60: faithfulness checker crashes when a context chunk has text: None",
-    )
     def test_none_context_chunk_text(self, checker):
         """Test handling of None in context chunk text."""
         feedback = "Has Python skills"
@@ -247,6 +243,37 @@ class TestFaithfulnessChecker:
         # Should handle gracefully
         assert isinstance(score, float)
         assert 0.0 <= score <= 1.0
+
+    def test_mixed_valid_none_and_missing_text_chunks(self, checker):
+        """Test valid text remains usable alongside invalid or missing text."""
+        feedback = "Has Python skills"
+        context_chunks = [
+            {"text": "Python skills"},
+            {"text": None},
+            {"content": "ignored text"},
+        ]
+
+        score = checker.check(feedback, context_chunks)
+
+        assert score == 1.0
+
+    def test_empty_context_chunk_text(self, checker):
+        """Test an empty context text returns a zero score."""
+        feedback = "Has Python skills"
+        context_chunks = [{"text": ""}]
+
+        score = checker.check(feedback, context_chunks)
+
+        assert score == 0.0
+
+    def test_all_none_context_chunk_text(self, checker):
+        """Test context containing only None text returns a zero score."""
+        feedback = "Has Python skills"
+        context_chunks = [{"text": None}, {"text": None}]
+
+        score = checker.check(feedback, context_chunks)
+
+        assert score == 0.0
 
     def test_score_consistency(self, checker):
         """Test that same input produces same score."""
