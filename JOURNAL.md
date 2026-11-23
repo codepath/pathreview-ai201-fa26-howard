@@ -58,3 +58,18 @@ Share the draft PR in the course Slack channel for peer review, address any feed
 
 Blockers:
 None. My first PR from a fork may need a maintainer to approve the CI run before the checks start.
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/106 
+
+**Branch:** `test/71-heading-hierarchy-fixture-indent`
+
+**What you built:**
+I fixed the failing heading-hierarchy test by passing its indented sample markdown through `textwrap.dedent`, so the headings start at the beginning of each line and the README parser can recognize them. The parser itself was already correct, so I left `ingestion/parsers/readme_parser.py` unchanged and removed the now-obsolete strict `xfail` marker for issue #71.
+
+**Tests added or updated:**
+All changes are in `tests/unit/test_readme_parser.py`. I updated `test_extract_heading_hierarchy` (dedented fixture, xfail marker removed) and added `test_extract_heading_hierarchy_order_and_text`, which checks every heading's level and text in document order, and `test_extract_heading_hierarchy_ignores_indented_lines`, which confirms a line indented like a code block is not counted as a heading.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+**Reviewer Name:** None (no response)
