@@ -24,3 +24,24 @@ PathReview's README parser (`ingestion/parsers/readme_parser.py`) pulls out a RE
 **Setup confirmation:** [x] App runs locally at localhost:5173
 
 **Cohort ledger:** [x] Issue added to cohort ledger
+
+Unit 8 — Reproduction & solution planning
+
+Reproduction commit link: PASTE_COMMIT_LINK_HERE
+
+Reproduction summary:
+I ran `.venv/Scripts/pytest tests/unit/test_readme_parser.py -v`, where `test_extract_heading_hierarchy` shows as `XFAIL`, then re-ran it with `--runxfail` to bypass the marker and it failed with `AssertionError: assert 0 > 0` because `_extract_heading_hierarchy` returned an empty list. Every line of the test's markdown starts with 8 spaces, so the parser's `^#` regex never matches; in a Python one-liner the parser returned `[]` for an indented sample but returned the correct headings and levels once the same string was passed through `textwrap.dedent`.
+
+Reproduction steps:
+`git checkout test/71-heading-hierarchy-fixture-indent`
+`.venv/Scripts/pytest tests/unit/test_readme_parser.py -v` → `test_extract_heading_hierarchy XFAIL`
+`.venv/Scripts/pytest "tests/unit/test_readme_parser.py::TestReadmeParser::test_extract_heading_hierarchy" --runxfail` → `FAILED ... assert 0 > 0`
+Python one-liner comparing the parser's output on an indented string vs. the same string after `textwrap.dedent` → `[]` vs. the correct heading list
+Root cause is the indented fixture in `tests/unit/test_readme_parser.py`, not `ingestion/parsers/readme_parser.py`.
+
+PLAN.md link: https://github.com/laylahadley/pathreview-ai201-fa26-howard/blob/test/71-heading-hierarchy-fixture-indent/PLAN.md
+
+Walkthrough video (recommended): Not recorded this week.
+
+Blockers or open questions:
+None blocking. Open question: lightly indented headings (1–3 spaces) are valid Markdown but not matched by the parser's regex — I'm treating that as out of scope for #71 and will mention it in my PR as a possible follow-up.
