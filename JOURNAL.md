@@ -72,3 +72,34 @@ I updated `tests/unit/test_review_service.py` to verify that owners can create r
 - [x] `make test-unit` passes (378 passed, 53 expected failures)
 
 **Draft PR feedback received from:** Kingston Davies
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [x] Yes  [ ] No
+
+**Summary of feedback:**
+Kingston Reviewed my PR in person and let me know I should make my PR clearer so that someone with no knowledge of what I was doing could easily latch on
+
+**How you responded:**
+I edited my PR comment to be more comprehensive of what I did
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Navigating the codebase was a bit harder than I expected. This codebase was actually the size of a real large codebase which I was not expect so finding what files effected my issues and trying to make sure I wasn't spilling on to other issues was a big concern.
+
+**What did you learn about working in a large codebase?**
+I learned that in a large codebase it helps to check how the rest of the app handles the same problem before deciding what to do. I looked at `api/routes/profiles.py` and saw that it returns a 404 when the profile belongs to someone else, so I used the same response for review creation. I also learned that PRs have to explain your changes clearly enough for someone who hasn't been working on the issue.
+
+**How did AI tools help — and where did they fall short?**
+It helped the most in navigating the codebase. Since the codebase was so large and my issue was so small, it wouldve taken me hours to find all the little connections to this issue and figure out how to reproduce it on my own. This is where AI helped the most. I wouldnt consider this a shortfall on AIs part but I did experience a lack of credits toward the end which made me have to start using my prompts more wisely
+
+**What would you do differently if you started over?**
+If I were to start over I think I'd pick a more challenging issue. Fixing issue #67 gave me more confidence because I figured out where the ownership check belonged and tested it in both `create_review()` and the `POST /reviews` route.
+
+**What are you most proud of from this module?**
+I was most proud of making `PLAN.md` because I had to find the affected files and explain the issue back to myself before I could map out the fix. One part I'm proud of was planning to test both a missing profile and one that belonged to another user, since both were supposed to return the same 404. It reminded me of what I was doing during my internship.
