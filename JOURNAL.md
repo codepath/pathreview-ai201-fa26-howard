@@ -45,3 +45,16 @@ Walkthrough video (recommended): Not recorded this week.
 
 Blockers or open questions:
 None blocking. Open question: lightly indented headings (1–3 spaces) are valid Markdown but not matched by the parser's regex — I'm treating that as out of scope for #71 and will mention it in my PR as a possible follow-up.
+
+Unit 9 — Solution building & PR submission
+
+Check-in 1 (mid-week)
+
+Current progress:
+PLAN.md sub-tasks 1–4 are done. I added `import textwrap` to `tests/unit/test_readme_parser.py`, passed the heading-hierarchy fixture through `textwrap.dedent` so its headings start at column 0, and removed the `strict=True` xfail marker for issue #71 (leaving the #70 marker alone). I also added two tests: one that checks the exact level and text of every heading in order, and one that confirms a line indented like a code block is not treated as a heading. `make test-unit` and `make check` both pass locally, and I opened a draft PR to get feedback.
+
+Next steps:
+Share the draft PR in the course Slack channel for peer review, address any feedback I agree with, confirm all five CI jobs are green on the PR, then mark it ready for review and fill in Check-in 2.
+
+Blockers:
+None. My first PR from a fork may need a maintainer to approve the CI run before the checks start.
