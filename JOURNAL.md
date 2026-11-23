@@ -66,3 +66,36 @@ Modified `tests/unit/test_review_service.py` (no production code changed). The t
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x ] No — still awaiting review
+
+**Summary of feedback:**
+[What did reviewers comment on? Or note that no review came in.]
+n/a
+**How you responded:**
+[What changes did you make, or what did you reply? If no feedback,
+leave blank.]
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+[Be specific — what part of the process, codebase, or workflow
+surprised you?]
+
+**What did you learn about working in a large codebase?**
+In my own projects I know why every piece exists, but here I had to figure out what the code actually does before changing anything. For this issue, that meant reading `review_service.py` to see exactly which calls are awaited (`execute`, `commit`, `refresh`) and which are synchronous (`scalars().first()` / `.all()`) before touching the tests. I also learned to work within the project's conventions: the xfail contract, `make check` and `make test-unit` gates, branch naming, and keeping the change small and scoped so a reviewer can trust it. Changing only the test file and no production code was deliberate.
+
+**How did AI tools help — and where did they fall short?**
+AI was most useful for explaining the difference between `AsyncMock` and `Mock`, helping me write PLAN.md as small sub-tasks, and drafting the `make_result()` helper and tighter assertions. It fell short on knowing the codebase's real behavior. I had to read the service myself to confirm that `list_reviews` runs two queries (count + page), and to verify that the fix actually removed the un-awaited coroutine warnings by running the tests. Decisions about scope, like not changing production code, were mine to make.
+
+**What would you do differently if you started over?**
+I'd ask for draft PR feedback earlier instead of waiting until the end, since I didn't get any reviewer input before the module closed. I'd also run the full test suite at the start to get a baseline, so I'd know right away which failures were mine and which were pre-existing. Writing PLAN.md before coding worked well and I'd keep doing that.
+
+**What are you most proud of from this module?**
+Replacing the weak assertions (like `len(reviews) > 0 or len(reviews) == 0`, which can never fail) with exact checks on return values and awaited call counts. Those tests now actually protect the service instead of just passing.
