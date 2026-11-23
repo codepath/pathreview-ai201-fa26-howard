@@ -6,7 +6,7 @@
 
 **Issue title:** Heading hierarchy test fixture is indented, so it contains no headings
 
-**Tier:** [x] Tier 1   [ ] Tier 2   [ ] Tier 3
+**Tier:** [ ] Tier 1   [x] Tier 2   [ ] Tier 3
 
 **Problem summary:**
 PathReview's README parser (`ingestion/parsers/readme_parser.py`) pulls out a README's headings and their levels (`#`, `##`, `###`) so the rest of the review pipeline knows how the document is structured. The unit test for this, `test_extract_heading_hierarchy` in `tests/unit/test_readme_parser.py`, currently fails and is marked `xfail`, but the parser itself is not the problem — the test's sample markdown is. That sample is written as an indented triple-quoted string, so every line starts with spaces, and the parser correctly only treats a line as a heading when `#` is the first character (in Markdown, heavily indented text is a code block, not a heading). As a result the parser finds zero headings and the test's assertions fail. A successful fix will un-indent the test fixture (for example with `textwrap.dedent`) so it contains real headings, then remove the `xfail` marker so the test runs and passes, without changing the parser's behavior.
