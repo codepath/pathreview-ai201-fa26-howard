@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
 
 import pytest
+from fastapi import HTTPException
 
 from core.services.review_service import (
     create_review,
@@ -13,18 +14,66 @@ from core.services.review_service import (
 
 
 @pytest.mark.unit
+class TestCreateReviewOwnership:
+    """Issue #67: create_review must verify the profile belongs to user_id."""
+
+    @pytest.mark.asyncio
+    async def test_create_review_rejects_profile_owned_by_another_user(
+        self, make_profile_lookup_session, user_a_profile, user_b_id
+    ):
+        """User B must not be able to create a review on User A's profile."""
+        # The ownership-filtered query finds nothing for User B; the profile
+        # itself does exist (owned by User A) if looked up by primary key.
+        db = make_profile_lookup_session(query_result=None, get_result=user_a_profile)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_review(db, user_a_profile.id, user_b_id)
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Profile not found"
+        db.add.assert_not_called()
+        db.commit.assert_not_called()
+        db.refresh.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_create_review_rejects_missing_profile(
+        self, make_profile_lookup_session, user_a_id
+    ):
+        db = make_profile_lookup_session()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_review(db, uuid4(), user_a_id)
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Profile not found"
+        db.add.assert_not_called()
+        db.commit.assert_not_called()
+        db.refresh.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_create_review_allows_profile_owner(
+        self, make_profile_lookup_session, user_a_profile, user_a_id
+    ):
+        """The profile's owner can still create a review (guards against over-fixing)."""
+        db = make_profile_lookup_session(query_result=user_a_profile, get_result=user_a_profile)
+
+        with patch("core.services.review_service.Review") as MockReview:
+            result = await create_review(db, user_a_profile.id, user_a_id)
+
+        assert result is MockReview.return_value
+        assert MockReview.call_args.kwargs["profile_id"] == user_a_profile.id
+        db.add.assert_called_once_with(MockReview.return_value)
+        db.commit.assert_called_once()
+
+
+@pytest.mark.unit
 class TestReviewService:
     """Test suite for review_service module."""
 
     @pytest.fixture
-    def mock_db_session(self):
+    def mock_db_session(self, make_profile_lookup_session, user_a_profile):
         """Create a mock async database session."""
-        session = AsyncMock()
-        session.add = Mock()
-        session.commit = AsyncMock()
-        session.refresh = AsyncMock()
-        session.execute = AsyncMock()
-        return session
+        return make_profile_lookup_session(query_result=user_a_profile)
 
     @pytest.fixture
     def mock_review(self):
