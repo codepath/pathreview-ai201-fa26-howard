@@ -1,5 +1,7 @@
 """Tests for readme_parser.py"""
 
+import textwrap
+
 import pytest
 
 from ingestion.parsers.base import ParseResult
@@ -131,10 +133,6 @@ class TestReadmeParser:
 
         assert "Content must be a string or bytes" in str(exc_info.value)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #71 (manifest H-04): heading hierarchy fixture is indented, so it has no headings",
-    )
     def test_extract_heading_hierarchy(self, parser):
         """Test heading hierarchy extraction."""
         markdown = """
@@ -150,7 +148,9 @@ class TestReadmeParser:
         ## Another Section
         Final content
         """
-        headings = parser._extract_heading_hierarchy(markdown)
+        # The string above is indented to match the code, so every line starts with
+        # spaces and none of them are valid headings. dedent strips that indent.
+        headings = parser._extract_heading_hierarchy(textwrap.dedent(markdown))
 
         assert isinstance(headings, list)
         assert len(headings) > 0
