@@ -68,3 +68,34 @@ I updated `tests/unit/test_faithfulness_checker.py` with edge case coverage for 
 **Self-review confirmation:** [X] make check passes  [X] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [X] No — still awaiting review
+
+**Summary of feedback:**
+No review came in.
+
+**How you responded:**
+
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The edge cases were harder than the original fix. It was easy to change the join so that `None` no longer caused a crash, but I also had to think through missing keys, empty strings, mixed valid and invalid chunks, and contexts containing only invalid values without changing the behavior for normal text.
+
+**What did you learn about working in a large codebase?**
+I learned that a small change still requires understanding the surrounding tests, conventions, and expected behavior before editing the code. In someone else's production code, preserving existing behavior is just as important as fixing the reported failure, so the focused tests and full unit checks helped me confirm that the changes I made stayed in their own lane and didn't cause any unwanted ripple effects.
+
+**How did AI tools help — and where did they fall short?**
+I used Copilot to help me locate the relevant checker and test for my issue, and had it explain why `dict.get("text", "")` still returns `None` when the key exists, and identify useful edge cases to test. They helped with suggesting implementation but I had to be careful prompting becuase they wouould often want to go beyond the scope of my fix and alter other parts of the codebase.
+
+**What would you do differently if you started over?**
+I would define the expected behavior for missing and `None` text values earlier in the planning stage and write the edge-case tests before implementing the fix. That would make the intended behavior clearer from the beginning and reduce uncertainty about how contexts with no usable text should be handled.
+
+**What are you most proud of from this module?**
+I'm less so proud about the fix becuase it didn't take much but the process of doing a PR properly was new and making sure I followed the contributing guidelines. Just that I learned industry norms to keep people's projects/codebase's neat and organized.
