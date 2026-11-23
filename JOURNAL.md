@@ -85,16 +85,21 @@ How I responded:
 **Reflection**
 
 What was harder than you expected?
+
 The environment and Git workflow were a little harder than the actual fix. On Windows, `make setup` failed immediately because `make` isn't installed by default, and I lost time second-guessing whether my terminal was the problem because Git Bash labeled itself "UCRT64." Later, my first `git push` in Unit 8 was rejected because the branch on GitHub had a commit my local copy didn't, and I had to learn `git pull --rebase` and why the commit ID changed afterward. Issue selection was also harder than I expected: my first two choices (#53 and #55) were already claimed, so I had to go back through the tracker and pick #71.
 
 What did you learn about working in a large codebase?
+
 In someone else's production code, the first job is figuring out where the problem actually lives, not writing code. My issue looked like a parser bug, but reading `ingestion/parsers/readme_parser.py` and running the parser on a dedented string showed the parser was correct and the test fixture was wrong, so the right fix was in `tests/unit/test_readme_parser.py`. I also learned how much the project's conventions shape a contribution: the branch name format, Conventional Commits, strict `xfail` markers that turn a passing test into an `XPASS(strict)` failure, ruff's import-sorting rule, and five CI jobs that all have to be green. Staying in scope mattered too — `tests/conftest.py` has the same indentation bug, but that's issue #70, so I left it alone to avoid colliding with another contributor.
 
 How did AI tools help - and where did they fall short?
+
 I leaned on AI heavily this module, and it was most useful for turning instructions into exact commands, reading unfamiliar parts of the repo quickly, and drafting the plan and PR description. It also fell short in ways I had to catch: it told me my terminal was the wrong one when it was actually Git Bash, it couldn't see which issues were already claimed or which tier they were, and it assumed my files would be in `~/Downloads` when they weren't. The bigger limitation is that relying on step-by-step instructions meant I sometimes ran commands before I fully understood them, so I had to go back and read the diff myself to be able to explain why `textwrap.dedent` fixes the test and why the parser should stay unchanged.
 
 What would you do differently if you started over?
+
 I'd check the cohort ledger and issue comments before getting attached to an issue, and keep two or three backups ready to pick in the event the one I selected isn't available. Also, I would make every edit locally and never on the GitHub website, (no matter how quick it seems) since editing JOURNAL.md manually is what caused my rejected push. Most of all, I'd use AI to explain the code and the error messages first, then make the changes myself, so the understanding comes before the commit instead of after it.
 
 What are you most proud of from this module?
+
 Getting the full contribution cycle working on Windows from scratch - fork, setup, reproduction, plan, fix, tests, and a PR with all five CI checks green. Specifically, I'm proud that I can explain why the bug was in the test rather than the parser, and that I added tests that check the exact heading levels and the indented-line behavior instead of just making the old test pass.
