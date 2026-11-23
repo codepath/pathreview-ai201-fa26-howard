@@ -27,7 +27,7 @@ PathReview's README parser (`ingestion/parsers/readme_parser.py`) pulls out a RE
 
 Unit 8 — Reproduction & solution planning
 
-Reproduction commit link: PASTE_COMMIT_LINK_HERE
+Reproduction commit link: https://github.com/laylahadley/pathreview-ai201-fa26-howard/commit/03dff31efab46252d382b06873b19d814f2f8d43 
 
 Reproduction summary:
 I ran `.venv/Scripts/pytest tests/unit/test_readme_parser.py -v`, where `test_extract_heading_hierarchy` shows as `XFAIL`, then re-ran it with `--runxfail` to bypass the marker and it failed with `AssertionError: assert 0 > 0` because `_extract_heading_hierarchy` returned an empty list. Every line of the test's markdown starts with 8 spaces, so the parser's `^#` regex never matches; in a Python one-liner the parser returned `[]` for an indented sample but returned the correct headings and levels once the same string was passed through `textwrap.dedent`.
