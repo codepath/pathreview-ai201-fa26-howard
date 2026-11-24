@@ -1,0 +1,339 @@
+# PathReview Contribution Journal
+
+Running record of my Module 3 contribution to PathReview.
+
+---
+
+## Unit 7 — Issue selection
+
+**Issue link:** https://github.com/codepath/pathreview-ai201-fa26-howard/issues/53
+
+**Issue title:** PII scrubber fails to redact parenthesized US phone numbers
+
+**Tier:** [x] Tier 1  [ ] Tier 2  [ ] Tier 3
+
+**Problem summary:**
+
+PathReview runs user-supplied text through `PIIScrubber` in the safety layer before it
+reaches the language model or gets persisted, so the scrubber is the component responsible
+for making sure personal details never leave the system in the clear. Its `phone_us` pattern
+permits only a hyphen or a dot between the area code, exchange, and line number, which means
+any number written with a space separator never matches — including `(555) 123-4567`, the
+most common way a US phone number is actually written, and `+1 555 123 4567`. The practical
+consequence is that `scrub()` hands those numbers back untouched and `detect()` reports no
+PII for them at all, so a resume carrying a parenthesized phone number is forwarded to the
+model and stored with the number intact, while the same number written with dashes is
+correctly redacted. A successful fix widens the separator so every common US format redacts
+consistently, without loosening the pattern so far that it begins swallowing unrelated digit
+runs such as dates, ZIP+4, or identifiers. The work is contained to `safety/pii_scrubber.py`
+and is already covered by five tests in `tests/unit/test_pii_scrubber.py` that currently
+carry `@pytest.mark.xfail(strict=True)`.
+
+**Branch name:** `fix/53-pii-scrubber-parenthesized-phone`
+
+**Setup confirmation:** [x] App runs locally at localhost:5173
+
+**Cohort ledger:** [x] Issue added to cohort ledger
+
+---
+
+### "Is this right for me?" — selection reasoning
+
+**Scope is genuinely small, and I confirmed that by reading rather than assuming.**
+The defect lives in a single dictionary entry — one regex string in `PII_PATTERNS` in
+`safety/pii_scrubber.py`. Both public methods, `scrub()` and `detect()`, iterate that same
+dictionary, so correcting the one pattern fixes both reported symptoms without touching
+either method body.
+
+**I reproduced the failure before committing to the issue.** Running the existing pattern
+against the five formats in the test fixture isolates the break exactly:
+
+| Input | Result |
+|---|---|
+| `555-123-4567` | redacted |
+| `(555) 123-4567` | **not redacted** |
+| `555.123.4567` | redacted |
+| `+1 555 123 4567` | **not redacted** |
+| `5551234567` | redacted |
+
+The two failures are precisely the two formats that use a space as a separator. The pattern's
+separator class is `[-.]`, which admits a hyphen or a dot and no whitespace, so the match
+consumes the area code, accepts the closing paren, then meets a space where it requires
+`[-.]` or nothing and fails before reaching the exchange digits. That table is what moved me
+from "this looks like a regex problem" to a specific named cause.
+
+**Verification is already built for me.** Five tests covering this issue are marked
+`xfail(strict=True)`. Because the marker is strict, a correct fix flips them from xfail to
+XPASS and turns CI red until the markers are deleted — per `docs/CONTRIBUTING.md`, removing
+them is part of the fix, not an afterthought. That gives me an unambiguous definition of done
+and makes it hard to claim success without it.
+
+**The risk I need to manage is over-redaction, not under-redaction.** Widening a separator
+class is the kind of change that quietly starts matching things it shouldn't. `PII_PATTERNS`
+also holds `ssn` and `phone_intl` entries, and the patterns are applied in sequence over the
+same text, so a looser phone pattern could consume digits another pattern expects or redact
+ordinary numbers in prose. My plan for Unit 8 is to decide deliberately how permissive the
+separator should be — a single optional whitespace character rather than `\s*` — and to add
+negative cases proving that dates, ZIP+4, and long identifiers are still left alone.
+
+**Why not something larger.** This is my first contribution to a codebase of this size, and
+the course is explicit that there is no extra credit for a harder tier. A Tier 1 issue with a
+reproducible failure, a contained blast radius, and prepared tests lets me spend my effort on
+the parts that are actually graded — contribution standards, process documentation, and a
+clean PR — instead of spending the four weeks still trying to understand the problem.
+
+**Open questions I had when I picked this.** Whether `detect()` depends on the pattern's
+three capture groups for reporting offsets, and whether `phone_intl` already matches
+`+1 555 123 4567` through a different route, which would change what the fix for that
+particular format needs to be. Both are answered in the setup notes below, now that the
+suite runs on this machine; a third question surfaced in their place.
+
+---
+
+### Setup status
+
+The environment is up and the local baseline is green.
+
+| Step | Result |
+|---|---|
+| `npm install` (frontend) | installed, no audit-blocking failures |
+| `npm run dev` | Vite serving on **http://localhost:5173**, login page renders, no console errors |
+| `npm test -- --run` | 18 passed across 2 files |
+| `.venv` + `pip install -e ".[dev]"` | installed on Python 3.13.5 |
+| `pytest tests/unit` | **375 passed, 53 xfailed**, 0 failures |
+| `ruff check .` | All checks passed |
+| `mypy api/ core/ ingestion/ rag/ agent/ safety/` | Success: no issues in 76 source files |
+
+Docker is not installed on this machine, so the `docker compose` services — PostgreSQL,
+Redis, and ChromaDB — are not running, and the FastAPI backend on port 8000 is therefore
+down. The frontend runs and serves independently of them; anything that calls the API
+(login, profile upload) will fail until those services exist. This does not block the issue:
+`pytest.ini_options` marks the unit suite as "fast, no external dependencies," and the five
+tests covering issue #53 run and xfail correctly without any service. Standing up Postgres
+locally is a prerequisite for the integration suite, not for this fix.
+
+Running the suite also settled the two open questions from my selection notes:
+
+- **`detect()` does not depend on the pattern's capture groups.** It reports
+  `match.group()`, `match.start()`, and `match.end()` — the whole match, never groups 1–3.
+  I can restructure the groups in the phone pattern without changing what `detect()` returns.
+- **`phone_intl` does not rescue `+1 555 123 4567`.** Its pattern,
+  `\+[0-9]{1,3}[-.]?[0-9]{1,14}`, requires a digit immediately after the optional `-` or `.`,
+  and the next character there is a space, so it fails too. That format needs the `phone_us`
+  fix; there is no second path covering it.
+
+One thing I did not expect: the issue body names four failing tests, but five carry the
+`#53` marker. The fifth, `test_mixed_pii_and_text`, uses a dashed number that the current
+pattern already redacts, so I need to find out during implementation why it still xfails
+before I delete its marker — deleting a marker on a test that fails for an unrelated reason
+would turn CI red for something I never fixed.
+
+---
+
+## Unit 8 — Reproduction & solution planning
+
+**Reproduction commit link:** https://github.com/pierremerry15/pathreview-ai201-fa26-howard/commit/ce2dde861dd3777b3b0f810404c8d94f3a4f2ef6
+
+**Reproduction summary:**
+I ran the issue's snippet and then added parametrized tests that put each US phone format
+through `scrub()` and `detect()` one at a time. Every space-separated format fails
+(`(555) 123-4567`, `+1 555 123 4567`, `+1 (555) 123-4567`, `555 123 4567`), and
+`(555)123-4567` is only partly redacted, to `([REDACTED]`. That exposed a second defect:
+the pattern's leading `\b` can never sit before `(` or `+`.
+
+**PLAN.md link:** https://github.com/pierremerry15/pathreview-ai201-fa26-howard/blob/fix/53-pii-scrubber-parenthesized-phone/PLAN.md
+
+**Walkthrough video (recommended):** _not recorded_
+
+**Blockers or open questions:**
+- **`test_mixed_pii_and_text` fails for a different reason.** This answers the question I
+  left open in Unit 7. Its phone (`555-123-4567`) already redacts. The test fails because
+  the `street_address` pattern has no word boundary on its suffix, so the `pl` in
+  "applications" counts as `Pl` (Place), and the match takes "Python" with it. The phone
+  fix alone won't flip this test. I'm asking in Slack whether to fix `street_address` in
+  this PR as a separate commit or to split it into its own issue.
+- `PIIScrubber` isn't imported anywhere outside the unit tests, even though
+  `ARCHITECTURE.md` lists it in the safety middleware chain. That keeps the blast radius
+  small, but it means I can only verify the fix through tests, not the UI.
+- Known trade-off of widening the separator: `100 200 3000` in prose will start to
+  redact. I'll note it in the PR instead of trying to make the regex guess at intent.
+
+### Reproduction log
+
+Baseline before touching anything: `pytest tests/unit/test_pii_scrubber.py` gives
+**20 passed, 5 xfailed**. The five xfails are the #53 markers.
+
+The issue's snippet, run as written:
+
+```text
+>>> s.scrub('Call me at (555) 123-4567 or 555-123-4567')
+'Call me at (555) 123-4567 or [REDACTED]'
+>>> s.detect('Call me at (555) 123-4567')
+[]
+```
+
+Format by format, from the new tests in the reproduction commit:
+
+| Format | `scrub()` | `detect()` value |
+|---|---|---|
+| `555-123-4567` / `555.123.4567` / `5551234567` / `1-555-123-4567` | `[REDACTED]` | full number |
+| `(555) 123-4567` | unchanged | — |
+| `+1 555 123 4567` | unchanged | — |
+| `+1 (555) 123-4567` | unchanged | — |
+| `555 123 4567` | unchanged | — |
+| `(555)123-4567` | `([REDACTED]` | `555)123-4567` |
+
+Tracing `test_mixed_pii_and_text`:
+
+```text
+>>> [d for d in s.detect(text) if d["type"] == "street_address"]
+[{'type': 'street_address', 'value': '5 years developing Python appl', ...}]
+```
+
+After the reproduction commit: **33 passed, 15 xfailed** in the file (5 original + 10 new
+per-format cases). Five new guard cases (ISO date, ZIP+4, long ID, version, 7-digit local)
+pass today and must keep passing after the fix.
+
+**Checking the plan before committing to it:** I applied the proposed `phone_us` and
+`street_address` patterns in a throwaway copy and removed every #53 marker. The file went
+to **48 passed, 0 xfailed**, and across `tests/unit` the only change was those xfails
+becoming passes. None of that code is committed. The real implementation is Unit 9.
+
+---
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Sub-tasks 1 and 2 from PLAN.md are done. `phone_us` in `safety/pii_scrubber.py` now
+allows one hyphen, dot, or space between groups, accepts the area code bare or in a balanced
+pair of parens, and uses lookarounds in place of both `\b` anchors so a match can start on
+`(` or `+`. All 10 per-format cases from my reproduction commit and the four tests the issue
+names now pass, and their xfail markers are gone. One deviation from the plan: I used a
+literal space rather than `\s` as the separator. With `\s`, `"Room 555\n123 4567"` is joined
+across the line break into one "phone number", which is exactly the kind of over-redaction I
+flagged as the main risk.
+
+**Next steps:**
+Sub-task 3 (`street_address` word boundaries, so `test_mixed_pii_and_text` passes for the
+right reason) as its own commit, sub-task 4 (punctuation, two-number, line-break,
+street-suffix and all-PII regression tests), then `make check`, `make test-unit`, and the PR.
+
+**Blockers:**
+No reply yet in Slack on whether the `street_address` fix belongs in this PR. Since the test
+carries the #53 marker and `CONTRIBUTING.md` says the fix must drop every #53 marker, I'm
+keeping it here as a separate commit and flagging it in the PR so a reviewer can ask me to
+split it out. Docker still isn't installed, so `make test-integration` runs only in CI.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/98
+
+**Branch:** `fix/53-pii-scrubber-parenthesized-phone`
+
+**What you built:**
+`PIIScrubber` now redacts every common US phone format, including `(555) 123-4567`,
+`+1 555 123 4567` and `(555)123-4567`, in full, with no stray `(` or `+`, and `detect()`
+reports the whole number with correct offsets. A second commit makes `street_address`
+require whole-word suffixes, which was the real cause of the fifth #53 test failing.
+
+**Tests added or updated:**
+`tests/unit/test_pii_scrubber.py`: removed all 15 #53 xfail markers (the 5 original tests
+plus the 10 per-format cases from Unit 8, along with the `_ISSUE_53` mark object) and added
+11 test cases: punctuation-wrapped numbers, two numbers in one string with `detect()` offsets,
+no matching across a line break, street suffixes inside words (`applications`, `platforms`)
+left alone, real addresses still redacted, and all PII types in one string. 21 tests in the
+file fail against the original scrubber and pass with the fix.
+`make test-unit`: **414 passed, 48 xfailed** (before: 388 passed, 63 xfailed).
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none
+
+---
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+As of November 23, [PR #98](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/98)
+is open with no reviews, no review comments and no conversation comments. The only participant
+is me. All five CI jobs (`lint`, `typecheck`, `test-unit`, `test-integration`, `frontend`)
+passed on the head commit `02b47bc`, which matters more than usual here: Docker isn't installed
+on my machine, so CI was the only place `test-integration` ever ran against my change. The
+scope question I raised in Slack during Unit 8 (whether the `street_address` fix belongs in this
+PR or its own issue) never got an answer before I opened the PR, so the PR's "Notes for
+Reviewers" section offers to split it out instead.
+
+**How you responded:**
+_No feedback to respond to yet._
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Deciding what "done" meant, not writing the fix. The issue named four failing tests, but five
+carried the `#53` marker, and the fifth, `test_mixed_pii_and_text`, had nothing to do with phone
+numbers. It failed because `street_address` had no word boundary on its suffix, so the `pl` in
+"applications" matched as `Pl` (Place) and took "Python" with it. `CONTRIBUTING.md` pulled me
+in two directions: remove every marker for the issue, but don't fold unrelated fixes into a bug
+PR. I asked in Slack, got no answer, and had to make the call myself: a separate commit, flagged
+for the reviewer, with an offer to split it. The regex itself was also harder than it looked.
+The obvious fix, allowing a space in `[-.]`, still leaves `(555)123-4567` as `([REDACTED]`,
+because `\b` can't sit before `(` or `+`. I only found that second defect because I tested
+every format separately instead of re-running the one example in the issue.
+
+**What did you learn about working in a large codebase?**
+That the documentation describes the system the maintainers intended, and the code is the
+system that actually exists. `ARCHITECTURE.md` lists `PIIScrubber` as the last step of the
+safety middleware chain, but searching `api/`, `agent/`, `core/`, `ingestion/` and `rag/` found
+no production code that imports it. That changed how I could verify my work (unit tests only,
+no UI demo) and how big the blast radius really was. I also learned to treat the repo's
+conventions as part of the spec. `xfail(strict=True)` meant a correct fix would turn CI red
+until I deleted the markers, so I couldn't delete a marker on a test that was failing for a
+reason I hadn't fixed. In my own projects I'd have changed the regex and moved on. Here I had
+to work out how `scrub()` runs the patterns one after another on each other's output, check
+that `123-45-6789` still reaches `ssn`, and keep the two fixes in separate commits so a
+reviewer could drop one without the other.
+
+**How did AI tools help — and where did they fall short?**
+I used Claude Code throughout this module, and the fix commits and PR are co-authored with it.
+It was most useful for the mechanical parts: explaining why `\b` fails before `(`, writing out
+the parametrized per-format tests, and turning my notes into a structured `PLAN.md` and PR
+description. Where it fell short was judgment that needed the repo's context or a decision
+about risk. The plan proposed `[-.\s]?` as the separator; when I tested it, `"Room 555\n123
+4567"` was joined across the line break into one phone number, so I switched to a literal
+space. Accepting that `100 200 3000` now redacts, and that a double-spaced number doesn't, were
+trade-offs I had to choose and defend, not facts the AI could look up. The clearest limit
+showed up after submission: neither the AI nor I tested `street_address` against realistic
+resume sentences. With my fix, "Managed 12 engineers on the Way of Code project" still scrubs
+to `Managed [REDACTED] of Code project`, because whole words like Way, Park, Run and Court are
+valid suffixes. That's older than my change, but it shows that a passing test suite only
+proves the cases somebody thought to write.
+
+**What would you do differently if you started over?**
+Three things. First, I'd split `street_address` into its own issue as soon as I found it in
+Unit 8 instead of waiting on a Slack answer that never came. Then #53 would stay phone-only and
+the second fix could get its own review and a proper test sweep, which is how the whole-word
+false positives above would have surfaced. Second, I'd install Docker during Unit 7 setup so
+I could run `make test-integration` locally rather than depend on CI for it. Third, I'd open
+the PR as a draft earlier in Unit 9. I had no draft feedback because nobody saw the PR until
+it was finished, and an early draft is the most direct way to get a maintainer to weigh in on
+a scope question. I'd also file the `phone_intl` follow-up issue (`+44 20 7946 0958` becomes
+`[REDACTED] 20 7946 0958`) instead of only offering to.
+
+**What are you most proud of from this module?**
+Not deleting the fifth xfail marker. It would have been easy to fix the phone pattern, see that
+four of the five #53 tests passed, and assume the last one was flaky or close enough. Tracing
+it with `detect()` to `'5 years developing Python appl'` turned a test I didn't understand into
+a second named root cause, a separate commit, and an honest note to the reviewer. That habit of
+reproducing before changing anything, and backing every claim in the PR with a test or an
+output (the before/after table, the guard cases for dates, ZIP+4 and IDs, the 21 tests that
+fail on the old scrubber), is what I want to carry into my next codebase.
