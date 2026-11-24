@@ -252,3 +252,88 @@ file fail against the original scrubber and pass with the fix.
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+---
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+As of November 23, [PR #98](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/98)
+is open with no reviews, no review comments and no conversation comments. The only participant
+is me. All five CI jobs (`lint`, `typecheck`, `test-unit`, `test-integration`, `frontend`)
+passed on the head commit `02b47bc`, which matters more than usual here: Docker isn't installed
+on my machine, so CI was the only place `test-integration` ever ran against my change. The
+scope question I raised in Slack during Unit 8 (whether the `street_address` fix belongs in this
+PR or its own issue) never got an answer before I opened the PR, so the PR's "Notes for
+Reviewers" section offers to split it out instead.
+
+**How you responded:**
+_No feedback to respond to yet._
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Deciding what "done" meant, not writing the fix. The issue named four failing tests, but five
+carried the `#53` marker, and the fifth, `test_mixed_pii_and_text`, had nothing to do with phone
+numbers. It failed because `street_address` had no word boundary on its suffix, so the `pl` in
+"applications" matched as `Pl` (Place) and took "Python" with it. `CONTRIBUTING.md` pulled me
+in two directions: remove every marker for the issue, but don't fold unrelated fixes into a bug
+PR. I asked in Slack, got no answer, and had to make the call myself: a separate commit, flagged
+for the reviewer, with an offer to split it. The regex itself was also harder than it looked.
+The obvious fix, allowing a space in `[-.]`, still leaves `(555)123-4567` as `([REDACTED]`,
+because `\b` can't sit before `(` or `+`. I only found that second defect because I tested
+every format separately instead of re-running the one example in the issue.
+
+**What did you learn about working in a large codebase?**
+That the documentation describes the system the maintainers intended, and the code is the
+system that actually exists. `ARCHITECTURE.md` lists `PIIScrubber` as the last step of the
+safety middleware chain, but searching `api/`, `agent/`, `core/`, `ingestion/` and `rag/` found
+no production code that imports it. That changed how I could verify my work (unit tests only,
+no UI demo) and how big the blast radius really was. I also learned to treat the repo's
+conventions as part of the spec. `xfail(strict=True)` meant a correct fix would turn CI red
+until I deleted the markers, so I couldn't delete a marker on a test that was failing for a
+reason I hadn't fixed. In my own projects I'd have changed the regex and moved on. Here I had
+to work out how `scrub()` runs the patterns one after another on each other's output, check
+that `123-45-6789` still reaches `ssn`, and keep the two fixes in separate commits so a
+reviewer could drop one without the other.
+
+**How did AI tools help — and where did they fall short?**
+I used Claude Code throughout this module, and the fix commits and PR are co-authored with it.
+It was most useful for the mechanical parts: explaining why `\b` fails before `(`, writing out
+the parametrized per-format tests, and turning my notes into a structured `PLAN.md` and PR
+description. Where it fell short was judgment that needed the repo's context or a decision
+about risk. The plan proposed `[-.\s]?` as the separator; when I tested it, `"Room 555\n123
+4567"` was joined across the line break into one phone number, so I switched to a literal
+space. Accepting that `100 200 3000` now redacts, and that a double-spaced number doesn't, were
+trade-offs I had to choose and defend, not facts the AI could look up. The clearest limit
+showed up after submission: neither the AI nor I tested `street_address` against realistic
+resume sentences. With my fix, "Managed 12 engineers on the Way of Code project" still scrubs
+to `Managed [REDACTED] of Code project`, because whole words like Way, Park, Run and Court are
+valid suffixes. That's older than my change, but it shows that a passing test suite only
+proves the cases somebody thought to write.
+
+**What would you do differently if you started over?**
+Three things. First, I'd split `street_address` into its own issue as soon as I found it in
+Unit 8 instead of waiting on a Slack answer that never came. Then #53 would stay phone-only and
+the second fix could get its own review and a proper test sweep, which is how the whole-word
+false positives above would have surfaced. Second, I'd install Docker during Unit 7 setup so
+I could run `make test-integration` locally rather than depend on CI for it. Third, I'd open
+the PR as a draft earlier in Unit 9. I had no draft feedback because nobody saw the PR until
+it was finished, and an early draft is the most direct way to get a maintainer to weigh in on
+a scope question. I'd also file the `phone_intl` follow-up issue (`+44 20 7946 0958` becomes
+`[REDACTED] 20 7946 0958`) instead of only offering to.
+
+**What are you most proud of from this module?**
+Not deleting the fifth xfail marker. It would have been easy to fix the phone pattern, see that
+four of the five #53 tests passed, and assume the last one was flaky or close enough. Tracing
+it with `detect()` to `'5 years developing Python appl'` turned a test I didn't understand into
+a second named root cause, a separate commit, and an honest note to the reviewer. That habit of
+reproducing before changing anything, and backing every claim in the PR with a test or an
+output (the before/after table, the guard cases for dates, ZIP+4 and IDs, the 21 tests that
+fail on the old scrubber), is what I want to carry into my next codebase.
