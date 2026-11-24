@@ -14,42 +14,84 @@ class TestReadmeScorer:
         """Create a ReadmeScorer instance."""
         return ReadmeScorer()
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #63: README scorer fixture is too short for its own word-count assertion",
-    )
     def test_readme_with_all_quality_signals(self, scorer):
         """Test README with all quality signals returns high score."""
         readme = """
-        # Project Name
-        A comprehensive project description.
+        # Trail Ledger
+
+        Trail Ledger is a small web application for volunteer groups that maintain public
+        walking trails. It records inspections, lets coordinators assign maintenance tasks,
+        and keeps a history of repairs for each trail segment. A shared log helps the next
+        crew see which work is already complete and which areas still need attention.
+        Each inspection includes the date, the segment identifier, a condition rating, and
+        a short note about what the crew observed.
 
         ## Installation
         ```bash
-        pip install package
+        python -m venv .venv
+        source .venv/bin/activate
+        python -m pip install -r requirements.txt
+        cp .env.example .env
+        alembic upgrade head
+        uvicorn trail_ledger.main:app --port 8000
         ```
+
+        Install Python and PostgreSQL before running these commands. Create a development
+        database and set `DATABASE_URL` in `.env` to its connection string. Run the
+        migration from the project root so Alembic can find its configuration file. Open
+        the local dashboard in your browser once the server log says it is ready. If you
+        use a shared database, ask the coordinator for a development account with its own
+        schema before applying migrations.
 
         ## Usage
-        ```python
-        import package
-        package.run()
-        ```
+
+        Create a trail from the dashboard and divide it into numbered segments. Give each
+        segment a recognisable landmark, such as a bridge or a junction, so volunteers
+        can identify it in the field. After an inspection, open the segment and select New
+        Inspection. Choose a condition rating, describe any hazards, and save the record.
+        Use the preview to confirm the selected segment and date before submitting.
+
+        For example, a volunteer who finds a blocked drain near a footbridge can record
+        the hazard and create a follow-up task from the inspection. The coordinator can
+        assign the task to the next available crew. After clearing the drain, that crew
+        records the work and closes the task. Both entries appear in the segment history,
+        so a later inspection can check whether the problem returned.
 
         ## Features
-        - Feature 1
-        - Feature 2
-        - Feature 3
+
+        - Filter the inspection log by date range, trail, or condition rating to prepare
+          a weekly maintenance schedule.
+        - Set a task priority and due date so coordinators can distinguish urgent hazards
+          from routine work such as replacing worn signs.
+        - Export the filtered log as CSV for volunteer reports. The export includes the
+          trail name, segment identifier, inspection date, condition, and notes.
+        - Review the activity history to see when a task was assigned, reopened, or
+          completed and which crew recorded each update.
 
         ## Tech Stack
-        - Python 3.9
-        - FastAPI
-        - PostgreSQL
+
+        FastAPI serves the dashboard and the inspection endpoints. PostgreSQL stores
+        trails, inspections, and work orders with foreign keys between records. Alembic
+        tracks schema changes, and pytest covers assignment and filtering behavior.
+        The dashboard uses server-rendered templates so volunteers can open it on a
+        phone without installing a native application.
 
         ![Build Status](https://example.com/badge.svg)
         ![Coverage](https://example.com/coverage.svg)
 
         ## Live Demo
         [Try it here](https://demo.example.com)
+
+        The demo starts with sample trails and work orders. Use the sample records to
+        try the inspection flow and export a CSV. Demo changes are reset periodically.
+
+        ## Troubleshooting
+
+        If the dashboard shows a database connection error, check that PostgreSQL is
+        running and that the URL names the correct database. If a newly added trail
+        does not appear in the log, clear any filters and check that its first inspection
+        was saved. When preparing a bug report, include the action you took, the page
+        that displayed the error, and whether the problem also occurs with sample data.
         """
 
         result = scorer.execute({"readme_content": readme})
@@ -57,7 +99,7 @@ class TestReadmeScorer:
         assert result.success is True
         data = result.data
         assert data["has_readme"] is True
-        assert data["word_count"] > 100
+        assert data["word_count"] >= 500
         assert data["word_count_category"] == "comprehensive"
         assert data["has_installation_section"] is True
         assert data["has_usage_section"] is True
