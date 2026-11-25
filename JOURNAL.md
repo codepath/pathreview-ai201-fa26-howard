@@ -199,16 +199,25 @@ the doc with the app's OpenAPI schema, so a route added without an example
 fails CI.
 
 **Tests added or updated:**
-I added `tests/unit/test_api_docs.py`, with 6 tests. They check that:
-- every route is documented, and no documented route is stale;
+I added `tests/unit/test_api_docs.py`, with 4 tests. They check that:
+- the doc covers exactly the routes in the app's OpenAPI schema;
 - each example uses `curl` with the right HTTP method;
-- protected routes send the bearer token, and public routes don't need one;
+- only the protected routes' examples send the bearer token;
 - the delete example comes after every example that reuses its IDs.
 
-All six fail against `main`'s original doc, and the ordering test fails
+All four fail against `main`'s original doc, and the ordering test fails
 against my earlier draft. No xfail marker was tied to #47, so I didn't delete
 any.
 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
 
-**Draft PR feedback received from:** none yet
+**Draft PR feedback received from:** a cohort peer (Slack). They asked me to
+organize the work better and make the solution more concise. In response
+(`83d67b2`) I:
+- restructured `docs/API.md` around an endpoint summary table, a single
+  quick-start section (variables, `jq`, common errors), and short examples
+  grouped by area, which cut it from 203 to 140 lines;
+- folded the docs test from 6 checks into 4.
+
+I re-ran every example against the local server and re-ran `make check` and
+`make test-unit`.
