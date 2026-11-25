@@ -59,6 +59,15 @@ A plan-execute orchestrator that coordinates multiple analysis tools. Each tool 
 ### RAG System (`rag/`)
 Hybrid retrieval (vector similarity + BM25 keyword) fetches relevant context from the user's ingested documents. The generator uses prompt templates to produce structured, evidence-based feedback. The evaluator scores retrieval relevance and generation faithfulness.
 
+#### Hybrid Retrieval Scoring
+The hybrid retriever normalizes vector and BM25 keyword scores separately by dividing each score by the maximum score in its result set. It then calculates a weighted sum using configurable weights, which default to 0.7 for vector search and 0.3 for keyword search:
+
+```text
+blended score = 0.7 × normalized vector score + 0.3 × normalized keyword score
+```
+
+For example, if a chunk has a normalized vector score of 0.8 and a normalized keyword score of 0.6, its blended score is `0.7 × 0.8 + 0.3 × 0.6 = 0.74`. A chunk returned by only one search method receives a score of zero for the missing method. The retriever ranks chunks by blended score and returns the highest-scoring results that meet its minimum-score threshold.
+
 ### Safety Layer (`safety/`)
 Middleware wrapping the generation pipeline. Components run in sequence: prompt injection defense → content filter → bias detector → PII scrubber. All safety events are logged with structured metadata for monitoring.
 
