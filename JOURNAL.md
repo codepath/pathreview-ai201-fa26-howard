@@ -14,3 +14,20 @@ The project's API documentation is missing example curl commands that developers
 **Setup confirmation:** [Yes] App runs locally at localhost:5173
 
 **Cohort ledger:** [Yes] Issue added to cohort ledger
+
+------------------------------------------------------------------------------------------
+
+## Unit 8 — Reproduction & solution planning
+
+**Reproduction commit link:** [link to commit documenting the reproduced issue]
+
+**Reproduction summary:**
+Since this was a documentation issue, I wanted to prove that there were no curl examples listed within the documentation. Using the linux command "grep -in "curl" I was able to check in both the README.md file and also within the docs folder to confirm. 
+
+**PLAN.md link:** [link to PLAN.md in your fork]
+
+
+**Blockers or open questions:**
+[Anything you're still uncertain about going into Unit 9, or leave blank]
+
+------------------------------------------------------------------------------------------
