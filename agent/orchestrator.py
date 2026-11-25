@@ -7,6 +7,8 @@ import structlog
 from .error_handling import retry_with_backoff
 from .memory.context_manager import ContextManager
 from .memory.session_store import SessionStore
+from .tools.dependency_audit_tool import DependencyAuditTool
+from .tools.github_tool import GitHubTool
 
 logger = structlog.get_logger()
 
@@ -24,7 +26,12 @@ class Orchestrator:
             session_store: Redis-backed session store (optional)
             tool_timeout: Timeout per tool in seconds
         """
-        self.tools = tools
+        self.tools = dict(tools)
+        if DependencyAuditTool.name not in self.tools:
+            github_tool = self.tools.get(GitHubTool.name)
+            self.tools[DependencyAuditTool.name] = DependencyAuditTool(
+                github_tool=github_tool if isinstance(github_tool, GitHubTool) else None
+            )
         self.session_store = session_store
         self.tool_timeout = tool_timeout
         self.context_manager = ContextManager()
@@ -85,20 +92,17 @@ class Orchestrator:
             List of (tool_name, tool_input) tuples
         """
         plan = []
+        repository = None
 
         # Conditionally add GitHub tool
         if profile_data.get("github_username"):
             for project in profile_data.get("projects", []):
                 if project.get("github_repo"):
-                    plan.append(
-                        (
-                            "github_tool",
-                            {
-                                "github_username": profile_data["github_username"],
-                                "repo_name": project["github_repo"],
-                            },
-                        )
-                    )
+                    repository = {
+                        "github_username": profile_data["github_username"],
+                        "repo_name": project["github_repo"],
+                    }
+                    plan.append((GitHubTool.name, repository))
                     break  # Only process first repo for now
 
         # Tech detector (if files available)
@@ -127,6 +131,11 @@ class Orchestrator:
                 ("market_analyzer", {"detected_skills": {}})  # Will be populated by context
             )
 
+        if "manifests" in profile_data:
+            plan.append((DependencyAuditTool.name, {"manifests": profile_data["manifests"]}))
+        elif repository is not None:
+            plan.append((DependencyAuditTool.name, repository))
+
         logger.info("plan_built", plan_size=len(plan))
         return plan
 
@@ -144,12 +153,14 @@ class Orchestrator:
             raise ValueError(f"Unknown tool: {tool_name}")
 
         # Check context cache
-        input_hash = ContextManager.hash_input(tool_input)
-        cached_result = self.context_manager.get_tool_result(tool_name, input_hash)
-
-        if cached_result:
-            logger.info("tool_cache_hit", tool=tool_name)
-            return cached_result
+        input_hash = None
+        # Registry versions and the contents of a repository can change between runs.
+        if tool_name != DependencyAuditTool.name:
+            input_hash = ContextManager.hash_input(tool_input)
+            cached_result = self.context_manager.get_tool_result(tool_name, input_hash)
+            if cached_result:
+                logger.info("tool_cache_hit", tool=tool_name)
+                return cached_result
 
         # Execute with retry and timeout
         tool = self.tools[tool_name]
@@ -158,7 +169,8 @@ class Orchestrator:
             result = self._execute_with_timeout(tool, tool_input)
 
             # Cache result
-            self.context_manager.store_tool_result(tool_name, input_hash, result)
+            if input_hash is not None:
+                self.context_manager.store_tool_result(tool_name, input_hash, result)
 
             return result
 

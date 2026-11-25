@@ -1,11 +1,25 @@
 """GitHub repository metadata tool."""
 
+import base64
+import json
+import re
+import time
+from pathlib import PurePosixPath
+from urllib.parse import quote
+
 import httpx
 import structlog
 
 from .base import BaseTool, ToolResult
 
 logger = structlog.get_logger()
+
+MANIFEST_NAMES = frozenset({"requirements.txt", "package.json", "pyproject.toml"})
+VENDORED_DIRECTORIES = frozenset({"node_modules", ".venv", "venv", "vendor"})
+MAX_MANIFESTS = 20
+MAX_MANIFEST_BYTES = 256 * 1024
+MAX_TREE_BYTES = 8 * 1024 * 1024
+DISCOVERY_TIMEOUT = 15.0
 
 
 class GitHubTool(BaseTool):
@@ -73,11 +87,7 @@ class GitHubTool(BaseTool):
         """
         url = f"{self.base_url}/repos/{username}/{repo_name}"
 
-        headers = {}
-        if self.api_token:
-            headers["Authorization"] = f"token {self.api_token}"
-
-        response = httpx.get(url, headers=headers, timeout=10.0)
+        response = httpx.get(url, headers=self._headers(), timeout=10.0)
         response.raise_for_status()
 
         repo_json = response.json()
@@ -106,6 +116,96 @@ class GitHubTool(BaseTool):
 
         return metadata
 
+    def fetch_dependency_manifests(
+        self, username: str, repo_name: str
+    ) -> tuple[dict[str, str], list[str]]:
+        """Read regular manifest files from a snapshot of the default branch.
+
+        Args:
+            username: Repository owner.
+            repo_name: Repository name.
+
+        Returns:
+            Manifest contents by repository path and warnings about skipped coverage.
+        """
+        if (
+            not re.fullmatch(r"[a-zA-Z0-9-]+", username)
+            or not re.fullmatch(r"[a-zA-Z0-9_.-]+", repo_name)
+            or repo_name in {".", ".."}
+        ):
+            return {}, ["Invalid GitHub repository reference"]
+
+        url = f"{self.base_url}/repos/{username}/{repo_name}"
+        deadline = time.monotonic() + DISCOVERY_TIMEOUT
+        try:
+            branch = self._read_json(url, deadline, MAX_MANIFEST_BYTES)["default_branch"]
+            tree_url = f"{url}/git/trees/{quote(branch, safe='')}?recursive=1"
+            tree = self._read_json(tree_url, deadline, MAX_TREE_BYTES)
+            entries = tree["tree"]
+            if not isinstance(entries, list):
+                raise ValueError("invalid repository tree")
+        except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+            return {}, [f"Could not discover dependency manifests: {exc}"]
+
+        warnings = ["GitHub repository tree was truncated"] if tree.get("truncated") else []
+        candidates = []
+        for entry in entries:
+            if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
+                warnings.append("Skipped an invalid GitHub tree entry")
+                continue
+            if entry.get("type") != "blob" or entry.get("mode") not in ("100644", "100755"):
+                continue
+            source_path = PurePosixPath(entry["path"])
+            if source_path.name in MANIFEST_NAMES and not VENDORED_DIRECTORIES.intersection(
+                source_path.parts
+            ):
+                candidates.append((source_path.as_posix(), entry))
+
+        if len(candidates) > MAX_MANIFESTS:
+            warnings.append(f"GitHub manifest discovery limited to {MAX_MANIFESTS} files")
+        manifests = {}
+        for path, entry in sorted(candidates, key=lambda candidate: candidate[0])[:MAX_MANIFESTS]:
+            if time.monotonic() >= deadline:
+                warnings.append("GitHub manifest retrieval reached its time limit")
+                break
+            try:
+                if not 0 <= entry["size"] <= MAX_MANIFEST_BYTES:
+                    raise ValueError("manifest exceeds the size limit")
+                sha = entry["sha"]
+                if not re.fullmatch(r"[0-9a-f]{40}", sha):
+                    raise ValueError("invalid GitHub blob SHA")
+                blob = self._read_json(f"{url}/git/blobs/{sha}", deadline, MAX_MANIFEST_BYTES * 2)
+                if blob.get("encoding") != "base64":
+                    raise ValueError("unsupported GitHub blob encoding")
+                content = base64.b64decode("".join(blob["content"].split()), validate=True)
+                if len(content) > MAX_MANIFEST_BYTES:
+                    raise ValueError("manifest exceeds the size limit")
+                manifests[path] = content.decode("utf-8-sig")
+            except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+                warnings.append(f"{path}: could not read GitHub manifest ({exc})")
+        return manifests, warnings
+
+    def _headers(self) -> dict[str, str]:
+        return {"Authorization": f"token {self.api_token}"} if self.api_token else {}
+
+    def _read_json(self, url: str, deadline: float, byte_limit: int) -> dict:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("GitHub manifest retrieval reached its time limit")
+        with httpx.stream(
+            "GET", url, headers=self._headers(), timeout=min(5.0, remaining)
+        ) as result:
+            result.raise_for_status()
+            buffer = bytearray()
+            for chunk in result.iter_bytes():
+                if time.monotonic() >= deadline or len(buffer) + len(chunk) > byte_limit:
+                    raise ValueError("GitHub response exceeded its size or time limit")
+                buffer.extend(chunk)
+        data = json.loads(buffer)
+        if not isinstance(data, dict):
+            raise ValueError("expected a GitHub JSON object")
+        return data
+
     def _has_readme(self, username: str, repo_name: str) -> bool:
         """Check if repository has a README file.
 
@@ -118,12 +218,8 @@ class GitHubTool(BaseTool):
         """
         url = f"{self.base_url}/repos/{username}/{repo_name}/readme"
 
-        headers = {}
-        if self.api_token:
-            headers["Authorization"] = f"token {self.api_token}"
-
         try:
-            response = httpx.head(url, headers=headers, timeout=5.0)
+            response = httpx.head(url, headers=self._headers(), timeout=5.0)
             return response.status_code == 200
         except Exception:
             return False

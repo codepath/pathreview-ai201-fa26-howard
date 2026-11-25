@@ -1,0 +1,10 @@
+{
+  "truncated": true,
+  "tree": [
+    {"type": "blob", "mode": "100644", "path": "frontend/package.json", "sha": "1111111111111111111111111111111111111111", "size": 20},
+    {"type": "blob", "mode": "100644", "path": "pyproject.toml", "sha": "2222222222222222222222222222222222222222", "size": 20},
+    {"type": "blob", "mode": "100644", "path": "node_modules/pkg/package.json", "sha": "3333333333333333333333333333333333333333", "size": 20},
+    {"type": "blob", "mode": "120000", "path": "requirements.txt", "sha": "4444444444444444444444444444444444444444", "size": 20},
+    {"type": "blob", "mode": "100644", "path": "large/requirements.txt", "sha": "5555555555555555555555555555555555555555", "size": 2000000}
+  ]
+}
