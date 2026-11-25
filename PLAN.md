@@ -101,9 +101,16 @@ See the reproduction notes in `JOURNAL.md` (Unit 8).
   `curl /health` example will return 503. If #61 and #62 merge before my PR,
   the note in step 4 becomes out of date, so I'll check their status before
   opening the PR.
-- **The examples haven't been run yet.** Docker isn't set up on my machine
-  yet, so the draft was only checked by reading the handlers. Step 5 depends on
-  getting Docker or Colima running.
+- **The local stack doesn't match Docker.** I run the app without Docker:
+  Postgres 16 is installed natively on port 5433, the port in `.env`, and
+  Redis and Chroma aren't running. The app starts, login works with the seeded
+  users, and `/health` returns 503 as expected. Step 5 can go ahead. Two things
+  could still differ from the Docker setup reviewers use: (1) whether any
+  example depends on Redis, for example if the rate limiter in
+  `safety/rate_limiter.py` is wired into a route; and (2) what
+  `POST /reviews` does without Chroma at `VECTOR_DB_URL`, since the background
+  ingestion may fail and leave the review `failed` instead of `completed`. I'll
+  note the stack I tested on in the PR description.
 - **`jq` dependency.** The token- and ID-capturing commands pipe into `jq`,
   which isn't in the prerequisites table in `docs/SETUP.md`. Open question: do I
   add `jq` there, or offer a fallback with no dependencies (copy the token
