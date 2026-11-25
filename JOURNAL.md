@@ -16,12 +16,12 @@
 
 ## Unit 8 — Reproduction & solution planning
 
-**Reproduction commit link:** [link to commit documenting the reproduced issue]
+**Reproduction commit link:** [https://github.com/ndorvelus/pathreview-ai201-fa26-howard/commit/c742db46d832dae1fb7b3915e15ca67ad7f76f32]
 
 **Reproduction summary:**
 Using FastAPI's TestClient against `api.main:app`, I sent 70 requests to `GET /`, 10 more than the configured `rate_limit_per_minute = 60` in `core/config.py`, and all 70 returned `200` with no `429` and no `X-RateLimit-Limit` or `X-RateLimit-Remaining` header (only `x-request-id`). The app's only middleware is `RequestIDMiddleware` and `CORSMiddleware`, and `RateLimiter.check_rate_limit` in `safety/rate_limiter.py` is never called outside its own unit tests, which all pass.
 
-**PLAN.md link:** [link to PLAN.md in your fork]
+**PLAN.md link:** [https://github.com/ndorvelus/pathreview-ai201-fa26-howard/blob/feat/34-Add-an-API-rate-limiting-header/PLAN.md]
 
 **Walkthrough video (recommended):** [link to your Loom video, ≤2 min — recommended, not graded]
 
