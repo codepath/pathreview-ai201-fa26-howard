@@ -209,3 +209,44 @@ Codex ran the reproduction and security baseline, investigated the additional ma
 https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/tree/fix/72-malformed-password-hashes
 
 **AI assistance:** Codex helped expand and run the regression cases before the fix, implement the narrow exception handler, add the isolated login-route tests, run the recorded checks, update the plan, and prepare the PR and check-ins. Both check-ins record work performed on November 25 in its actual sequence.
+
+## Unit 10 — Review status and reflection
+
+**Work date:** November 25, 2026 (America/New_York)
+
+### Feedback status and response
+
+- **PR:** [Howard PathReview #113](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113)
+- **Feedback checked:** November 25, 2026 at 6:27 p.m. EST.
+- **Review status:** No submitted reviews, PR discussion comments, or inline review comments had arrived at the time of this check.
+- **Response:** No feedback-driven code changes or replies were needed because no feedback had arrived.
+- **PR outcome:** Open, unmerged, and ready for review.
+- **CI at this check:** All five jobs passed on commit `1e4e75c495645c9154d37da58fad2885a892da2d`. The [live PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks) show results for the latest commit, including this reflection update.
+
+### 1. What was harder than you expected?
+
+Getting the development environment running was more involved than the small authentication fix. Docker was initially stopped, and another local app occupied ports 5433 and 8001, so PathReview needed a local Compose override using ports 15433 and 18001. The pinned ChromaDB image also encountered a NumPy compatibility error and a missing `curl` health-check command, which required local workarounds before all three services became healthy.
+
+### 2. What did you learn about working in a large codebase?
+
+This project showed me how starting from a failing test can narrow a large codebase to a manageable path. For issue #72, that path connected `tests/unit/test_security.py`, `core/security.py::verify_password()`, and `api/routes/auth.py::login()`, whose existing invalid-credentials branch already provided the desired HTTP 401 response. The strict `xfail` marker also showed why understanding the test configuration matters: the baseline suite could pass while the seeded bug remained, and removing that issue-specific marker was part of completing the fix.
+
+### 3. How did AI tools help, and where did they fall short?
+
+I used Codex to inspect the repository, configure the environment, draft the plan and journal, implement the fix and regression tests, and run the checks. Its initial suggestion to skip issue #72 because another student had claimed it was based on an incorrect assumption, which the course brief corrected by stating that claims are non-exclusive. The useful evidence for evaluating the work came from the actual code, the four failing cases before the fix, the 37 passing affected tests afterward, and the five passing CI jobs.
+
+### 4. What would you do differently if you started over?
+
+I would set up the environment and complete issue selection earlier in the module, leaving more time between reproduction, implementation, and submission. I would check Docker and occupied ports first, then record each setup workaround and test result as it happened. I would also leave more time to seek peer feedback, since PR #113 had not received external review when I wrote this reflection.
+
+### 5. What are you most proud of from this module?
+
+I am most proud of completing a focused fix with evidence at both the password-helper and login-route levels. The tests show malformed stored hashes returning `False` and HTTP 401, while valid passwords still authenticate and unexpected backend errors remain visible. The contribution also has a reviewable sequence of reproduction, plan, regression-test, implementation, and documentation commits, with all five CI jobs passing before the PR was marked ready for review.
+
+### AI assistance and submission status
+
+Codex helped draft these reflections from the setup failures, code paths, test results, commits, and GitHub status recorded during this work.
+
+**Unit 10 course submission:** Pending. Course submissions and the Howard ledger update remain for the final submission step. Submit the same working-branch URL separately for Units 7, 8, 9, and 10:
+
+https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/tree/fix/72-malformed-password-hashes
