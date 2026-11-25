@@ -23,7 +23,7 @@ documentation, so API behavior stays the same.
 
 **Branch name:** `docs/47-api-curl-examples`
 
-**Setup confirmation:** [ ] App runs locally at localhost:5173
+**Setup confirmation:** [x] App runs locally at localhost:5173 (native Postgres 16 on port 5433 instead of Docker)
 
 **Cohort ledger:** [ ] Issue added to cohort ledger
 
