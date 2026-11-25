@@ -180,3 +180,35 @@ All five PLAN.md sub-tasks are done:
 **Blockers:**
 None. One thing to watch: #37 (PR #107) also edits `docs/API.md`, so whichever
 merges second will need to resolve a merge conflict.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/82
+
+**Branch:** `docs/47-api-curl-examples`
+
+**What you built:**
+I rewrote `docs/API.md` so every one of the 12 registered routes has a
+copy-and-paste `curl` example. The examples are ordered to run top to bottom:
+they capture the token and the profile and review IDs, and reuse them in later
+commands. The doc also covers the known `/health` 503, the `jq` prerequisite,
+and the error responses readers are likely to hit. A new unit test compares
+the doc with the app's OpenAPI schema, so a route added without an example
+fails CI.
+
+**Tests added or updated:**
+I added `tests/unit/test_api_docs.py`, with 6 tests. They check that:
+- every route is documented, and no documented route is stale;
+- each example uses `curl` with the right HTTP method;
+- protected routes send the bearer token, and public routes don't need one;
+- the delete example comes after every example that reuses its IDs.
+
+All six fail against `main`'s original doc, and the ordering test fails
+against my earlier draft. No xfail marker was tied to #47, so I didn't delete
+any.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none yet
