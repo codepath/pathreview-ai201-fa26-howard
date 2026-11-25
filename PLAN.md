@@ -3,9 +3,9 @@
 - **Issue:** [Malformed stored password hashes raise instead of returning False](https://github.com/codepath/pathreview-ai201-fa26-howard/issues/72)
 - **Branch:** `fix/72-malformed-password-hashes`
 - **Prepared:** November 25, 2026 (America/New_York)
-- **Stage:** Unit 9. Implementation and local validation are complete.
+- **Stage:** Unit 9. Implementation, local validation, and PR CI verification are complete.
 - **Pull request:** [Howard PathReview #113](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113)
-- **Execution status:** Tasks 1–4 below, task 5's local validation, and self-review are complete. The 37 affected tests pass, `make check` passes, the unit suite reports 388 passed / 52 xfailed, and all 18 frontend tests pass. Current results for the five CI jobs are available in the [PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks).
+- **Execution status:** All five plan tasks are complete. The 37 affected tests pass, `make check` passes, the unit suite reports 388 passed / 52 xfailed, and all 18 frontend tests pass. All five CI jobs passed in [run 45716211881](https://github.com/codepath/pathreview-ai201-fa26-howard/actions/runs/45716211881), and PR #113 was marked ready for review. The [PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks) track the latest commit.
 - **Reproduction commit:** [18fcce3](https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/commit/18fcce31ea1b7e84ea5951d603830b2a7af1a491)
 - **Evidence:** [Commands and observed output](docs/evidence/unit8-reproduction.txt)
 
@@ -73,7 +73,7 @@ The integration directory currently has no tests. `make test-integration` collec
 - **Dependency differences:** The local environment uses Python 3.13.7 and Passlib 1.9.5, while CI uses Python 3.11 and dependencies specified with lower bounds. The linked stable Passlib reference is version 1.7.4. Assert observable return values and exception classes instead of exact library error text, and verify the PR's actual CI results.
 - **Validation side effects:** `make check` includes Black, which writes formatting changes. Inspect its diff and keep the contribution focused on the issue. Preserve unrelated seeded defects and their suppressions.
 
-All helper and caller regression cases pass locally. There are no implementation blockers. The [PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks) provide the current CI results, and the PR description records verification before the PR is marked ready for review.
+All helper and caller regression cases pass locally, and all five CI jobs passed before the PR was marked ready for review. There are no current blockers. The [PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks) provide the current CI results.
 
 ## 6. Edge cases
 

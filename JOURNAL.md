@@ -99,7 +99,7 @@ Row values to enter in the **Howard** tab: **Shreejay Subedi**, **shreejaysubedi
 
 ### AI assistance
 
-Codex inspected the repository and live issue, helped configure and verify the local environment, and helped draft this journal from the observed results. 
+Codex inspected the repository and live issue, helped configure and verify the local environment, and helped draft this journal from the observed results.
 
 ## Unit 8 — Reproduction and solution plan
 
@@ -175,11 +175,12 @@ Codex ran the reproduction and security baseline, investigated the additional ma
 - **Live PR:** [Howard PathReview #113](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113)
 - **Branch:** `fix/72-malformed-password-hashes`
 - **CI results:** [Live results for lint, typecheck, test-unit, test-integration, and frontend](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks)
+- **PR status:** Ready for review. Marked ready on November 25 after all five CI jobs passed.
 - **Draft feedback source:** none. No external review comments had arrived when this check-in was written.
 
 **What I built:** `verify_password()` now returns `False` when Passlib raises `ValueError`, including both unrecognized hashes and malformed bcrypt strings. The existing login route consequently rejects those credentials with HTTP 401. Valid passwords still authenticate, and unsupported argument types and unexpected backend errors remain visible.
 
-**Plan progress:** Completed tasks 1–4 and task 5's local validation/self-review. The PR includes the required template, `Closes #72`, root-cause explanation, and reproduction/verification instructions. The live PR checks above track CI, which is verified before marking the PR ready for review.
+**Plan progress:** Completed all five plan tasks, including local validation, self-review, and verification of all five CI jobs. The PR includes the required template, `Closes #72`, root-cause explanation, and reproduction/verification instructions.
 
 **Exact test files and behaviors:**
 
@@ -195,9 +196,11 @@ Codex ran the reproduction and security baseline, investigated the additional ma
 
 `make test-integration` collected **0 tests**. Pytest exited **5** and Make exited **2**; `.github/workflows/ci.yml` already treats an empty integration suite as success. This records the command's actual result and does not claim integration-test coverage.
 
+**CI verification:** [CI run 45716211881](https://github.com/codepath/pathreview-ai201-fa26-howard/actions/runs/45716211881) passed **lint, typecheck, test-unit, test-integration, and frontend** on commit `57ff6ff5e13a6d1f9a858104c527c1a05d626fa8`. The PR was then marked ready for review. The live checks link above tracks subsequent documentation commits as well.
+
 **Self-review:** Read the entire change set and checked formatting/whitespace. The production change is limited to `core/security.py`; the other changes are focused tests and the course documentation/evidence. No unrelated seeded markers or type-checking suppressions were removed.
 
-**Blockers:** No implementation or local-test blockers. The PR's live checks are the source for CI status, including any maintainer approval needed for fork workflows.
+**Blockers:** None. Implementation, local checks, and the five CI jobs passed before the PR was marked ready for review.
 
 **Ledger update:** Pending. Add PR #113 and its status to the existing Howard ledger row when completing the submission steps.
 
