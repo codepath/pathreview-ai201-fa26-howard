@@ -221,3 +221,80 @@ organize the work better and make the solution more concise. In response
 
 I re-ran every example against the local server and re-ran `make check` and
 `make test-unit`.
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No maintainer or instructor review has come in on
+[PR #82](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/82).
+The only comment on the PR is my own review request, posted after I addressed
+the Slack peer feedback in Unit 9. That feedback ("organize it better, make the
+solution more concise") is documented in Check-in 2.
+
+**How you responded:**
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Getting the environment running was harder than the fix itself. `make setup`
+assumes Docker, and I didn't have it, so I ran Postgres 16 natively on the
+port `.env` expects. I also had to work out which services the API actually
+needs to start: Postgres, but not Redis or Chroma. The second surprise was
+that a docs issue still needed real verification. Reading the handlers wasn't
+enough. Only running every example in order showed that the
+`DELETE /profiles` example sat before the review examples. Deleting a profile
+also deletes its reviews, so every command after it returned `404`. I also
+didn't expect other seeded bugs to affect my issue: `/health` returns `503`
+because of #61 and #62, so the doc had to warn readers instead of showing a
+"healthy" example.
+
+**What did you learn about working in a large codebase?**
+In someone else's project, the code is the source of truth, not the existing
+docs. I checked each example against the route handler and schema it calls,
+for example login takes form data with the email as `username`, not JSON. I
+learned to keep my change narrow. I put the `jq` note in `docs/API.md`
+instead of also editing `SETUP.md`, so the PR stayed reviewable. I also
+noticed that #37 / PR #107 edits the same file, so I flagged the likely merge
+conflict for reviewers. The project's conventions (branch names,
+Conventional Commits, the PR template, five required CI jobs, xfail markers
+tied to issues) felt like overhead at first. Once I used them, I saw they're
+what let many contributors work in parallel without breaking `main`.
+
+**How did AI tools help — and where did they fall short?**
+AI was most useful for mapping the codebase quickly: listing every
+registered route, comparing that list with the doc, and running all the
+examples with their status codes. It also wrote the docs test that keeps
+`docs/API.md` in sync with the routes. It fell short in a few ways:
+- Its first version of the test assumed FastAPI lists every route in
+  `app.routes`. On this FastAPI version, included routers are wrapped, so the
+  test was wrong. That only showed up when we ran it against the old versions
+  of the doc, and it was rewritten to read the OpenAPI schema instead.
+- It couldn't do anything outside the terminal: installing Docker was blocked,
+  and it had no access to the cohort ledger sheet or Slack.
+- It couldn't decide what my peer's vague feedback meant. I had to choose how
+  to read "organize it better."
+
+My takeaway is that I need to understand and check what the AI produces,
+because it can be confidently wrong.
+
+**What would you do differently if you started over?**
+I'd follow the process in order. My first draft and PR (Nov 11) came before
+I had reproduced the issue, written a real plan, or run the app. That's
+exactly why the ordering bug and the missing `/health` warning got through.
+I'd open the PR as a draft and keep it there until I had feedback. I'd also
+ask my peer to clarify vague feedback instead of guessing. And I'd keep the
+commit history cleaner, since journal-only commits are mixed in with the
+actual fix.
+
+**What are you most proud of from this module?**
+The `tests/unit/test_api_docs.py` test. Instead of only fixing the docs once,
+it makes CI fail if anyone adds a route without documenting it, or puts the
+cleanup example in the wrong place. I checked that it catches both the
+original problem on `main` and my own earlier mistake, which makes me
+confident the fix will last.
