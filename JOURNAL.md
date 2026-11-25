@@ -71,3 +71,61 @@ documentation, so API behavior stays the same.
   revise it after feedback.
 - [x] *Blockers:* There are none. The issue doesn't depend on any other
   unresolved issue.
+
+## Unit 8 — Reproduction & solution planning
+
+### Reproduction steps (issue #47)
+
+Issue #47 is a documentation gap, so I reproduced it by checking what
+`docs/API.md` on `main` provides against the routes the API actually
+registers.
+
+1. Count the `curl` examples in the API reference on `main`:
+
+   ```bash
+   git show main:docs/API.md | grep -c curl
+   # 0
+   ```
+
+2. List the routes that the doc covers (9 lines, with no example invocations):
+
+   ```bash
+   git show main:docs/API.md | grep -E '^`(GET|POST|PUT|DELETE) '
+   # GET /health, POST /auth/register, POST /auth/login,
+   # POST /profiles, GET /profiles/{profile_id}, DELETE /profiles/{profile_id},
+   # POST /reviews, GET /reviews/{review_id}, GET /reviews
+   ```
+
+3. List the routes the app actually registers (12):
+
+   ```bash
+   grep -nE '@app\.get' api/main.py
+   grep -nE '@router\.(get|post|put|delete)' api/routes/*.py
+   grep -nE 'APIRouter\(prefix' api/routes/*.py
+   ```
+
+   The result: `GET /`, `GET /health`, `POST /auth/register`, `POST /auth/login`,
+   `POST /profiles`, `GET /profiles/{id}`, `PUT /profiles/{id}`,
+   `DELETE /profiles/{id}`, `POST /reviews`, `GET /reviews/{id}`,
+   `GET /reviews`, `GET /reviews/{id}/status`.
+
+**What I observed:**
+- `docs/API.md` has **zero** `curl` commands. A new developer has no
+  copy-and-paste way to smoke-test the API.
+- **3 of the 12 routes aren't documented at all:** `GET /`
+  (`api/main.py:96`), `PUT /profiles/{profile_id}`
+  (`api/routes/profiles.py:146`), and `GET /reviews/{review_id}/status`
+  (`api/routes/reviews.py:139`).
+- The doc never mentions how requests have to be formatted, and those formats
+  aren't guessable:
+  - `POST /auth/login` takes **form data** (`OAuth2PasswordRequestForm`) with
+    the email sent as `username`, not JSON (`api/routes/auth.py`).
+  - `POST /profiles` takes **multipart form data** (`Form(...)` / `File(...)`),
+    not JSON (`api/routes/profiles.py:23`).
+  - Every profile and review route needs an `Authorization: Bearer <token>`
+    header.
+- A related problem turned up while reproducing: `GET /health` on `main`
+  always reports `postgres` and `redis` as unhealthy and returns **503**. That
+  happens because of `db.execute("SELECT 1")` with a raw string (issue #61) and
+  `settings.redis_host`, which doesn't exist (issue #62), both in
+  `api/routes/health.py`. A health `curl` example has to account for this.
