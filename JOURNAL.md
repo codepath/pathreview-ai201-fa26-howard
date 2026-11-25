@@ -13,3 +13,17 @@
 **Setup confirmation:** [Y] App runs locally at localhost:5173
 
 **Cohort ledger:** [Y] Issue added to cohort ledger
+
+## Unit 8 — Reproduction & solution planning
+
+**Reproduction commit link:** [link to commit documenting the reproduced issue]
+
+**Reproduction summary:**
+Using FastAPI's TestClient against `api.main:app`, I sent 70 requests to `GET /`, 10 more than the configured `rate_limit_per_minute = 60` in `core/config.py`, and all 70 returned `200` with no `429` and no `X-RateLimit-Limit` or `X-RateLimit-Remaining` header (only `x-request-id`). The app's only middleware is `RequestIDMiddleware` and `CORSMiddleware`, and `RateLimiter.check_rate_limit` in `safety/rate_limiter.py` is never called outside its own unit tests, which all pass.
+
+**PLAN.md link:** [link to PLAN.md in your fork]
+
+**Walkthrough video (recommended):** [link to your Loom video, ≤2 min — recommended, not graded]
+
+**Blockers or open questions:**
+[Anything you're still uncertain about going into Unit 9, or leave blank]
