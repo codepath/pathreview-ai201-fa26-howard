@@ -1,6 +1,8 @@
 """Tests for security.py"""
 
 from datetime import timedelta
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -215,10 +217,6 @@ class TestSecurity:
         assert isinstance(hashed, str)
         assert verify_password(long_password, hashed) is True
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="issue #72 (manifest H-05): password verify raises UnknownHashError instead of returning False",
-    )
     @pytest.mark.parametrize(
         "stored_hash",
         [
@@ -232,6 +230,34 @@ class TestSecurity:
     def test_verify_with_wrong_hash_format(self, stored_hash):
         """Reject malformed stored hashes without raising an exception."""
         assert verify_password("password", stored_hash) is False
+
+    def test_verify_password_oversized_input_returns_false(self):
+        """Reject passwords beyond Passlib's maximum verification size."""
+        stored_hash = hash_password("password")
+
+        assert verify_password("p" * 5000, stored_hash) is False
+
+    def test_verify_password_invalid_argument_types_raise(self):
+        """Keep unsupported argument types visible as programming errors."""
+        invalid_value: Any = 123
+        stored_hash = hash_password("password")
+
+        with pytest.raises(TypeError):
+            verify_password(invalid_value, stored_hash)
+
+        with pytest.raises(TypeError):
+            verify_password("password", invalid_value)
+
+    def test_verify_password_backend_error_propagates(self):
+        """Keep operational backend failures distinct from invalid hashes."""
+        with (
+            patch(
+                "core.security.pwd_context.verify",
+                side_effect=RuntimeError("verification backend unavailable"),
+            ),
+            pytest.raises(RuntimeError, match="verification backend unavailable"),
+        ):
+            verify_password("password", "stored_hash")
 
     def test_token_tampering_detection(self):
         """Test that tampered token is rejected."""

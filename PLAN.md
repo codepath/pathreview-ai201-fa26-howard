@@ -3,13 +3,14 @@
 - **Issue:** [Malformed stored password hashes raise instead of returning False](https://github.com/codepath/pathreview-ai201-fa26-howard/issues/72)
 - **Branch:** `fix/72-malformed-password-hashes`
 - **Prepared:** November 25, 2026 (America/New_York)
-- **Stage:** Unit 8. Reproduction is committed; implementation is planned for Unit 9.
+- **Stage:** Unit 9. Implementation and local validation are complete; PR CI is pending.
+- **Execution status:** Tasks 1–4 below are complete. The 37 affected tests pass, `make check` passes, the unit suite reports 388 passed / 52 xfailed, and all 18 frontend tests pass. Task 5's PR/CI verification remains open.
 - **Reproduction commit:** [18fcce3](https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/commit/18fcce31ea1b7e84ea5951d603830b2a7af1a491)
 - **Evidence:** [Commands and observed output](docs/evidence/unit8-reproduction.txt)
 
 ## 1. Understand
 
-`core/security.py::verify_password()` immediately returns `bool(pwd_context.verify(...))`. If Passlib cannot identify or parse the stored hash, it raises before `bool()` can produce a result. The helper does not catch that error, so `api/routes/auth.py::login()` reaches its generic exception handler and responds with HTTP 500.
+Before the fix, `core/security.py::verify_password()` immediately returned `bool(pwd_context.verify(...))`. If Passlib could not identify or parse the stored hash, it raised before `bool()` could produce a result. The helper did not catch that error, so `api/routes/auth.py::login()` reached its generic exception handler and responded with HTTP 500. The implementation now catches `ValueError` around that comparison and returns `False`.
 
 The existing `TestSecurity.test_verify_with_wrong_hash_format` expects `False` for `not_a_valid_bcrypt_hash`, but carries a strict `xfail` marker for issue #72 / manifest H-05. Running it with `--runxfail` reproduced `UnknownHashError` and exit code 1. The unchanged security test file otherwise reports 24 passed and 1 xfailed.
 
@@ -24,7 +25,7 @@ Local investigation also found that an empty or unrecognized stored hash raises 
 - **Caller:** `api/routes/auth.py::login()` passes `form_data.password` and `user.hashed_password` to the helper. Its `False` branch raises HTTP 401, and its generic handler raises HTTP 500.
 - **Stored value:** `core/models/user.py::User.hashed_password` is a non-nullable string column. Empty and corrupt string contents are the relevant boundary cases.
 - **Request boundary:** The login route uses FastAPI's `OAuth2PasswordRequestForm`. `api/schemas/user.py::UserCreate` defines registration validation separately; this fix targets verification.
-- **Planned caller test:** Add `tests/unit/test_auth.py` for isolated login-route behavior using a mocked database dependency and the real security helper.
+- **Caller tests:** `tests/unit/test_auth.py` covers isolated login-route behavior using a mocked database dependency and the real security helper.
 - **Required validation commands and CI definitions:** `Makefile` and `.github/workflows/ci.yml`.
 
 The relevant path is: login form data, user lookup, `verify_password()`, Passlib comparison, then the route's existing authentication response. The proposed implementation change belongs in the shared helper because the caller already handles a `False` result.
@@ -37,7 +38,7 @@ The relevant path is: login form data, user lookup, `verify_password()`, Passlib
 4. **Verify the login caller.** In the new `tests/unit/test_auth.py`, mount the existing auth router on a small FastAPI test app. Override `get_db` with a fake database result containing a synthetic user and malformed hash, without mocking `verify_password()`. Submit form credentials and assert HTTP 401 with `Invalid email or password`, the bearer challenge, and no access token. Include a valid-hash login control. Database fixtures must be local mocks, so these tests need no Docker or real accounts.
 5. **Validate and review the focused change.** Run the affected tests, `make check`, and `make test-unit`; then run frontend tests and the integration test command corresponding to the five required CI jobs. Review the complete diff for accidental changes and unrelated markers or suppressions. Record actual commands and outcomes in the Unit 9 journal and PR, then confirm all five CI jobs on the PR.
 
-Commands for the affected tests after the new caller test exists:
+Commands used for local validation:
 
 ```bash
 .venv/bin/pytest tests/unit/test_security.py tests/unit/test_auth.py -v --tb=short
@@ -47,7 +48,7 @@ make test-integration
 cd frontend && npm test -- --run
 ```
 
-The integration directory currently has no tests. Pytest's exit code 5 in that case means no tests were collected; the CI workflow explicitly handles it. Record that result accurately rather than describing it as integration coverage. The Unit 9 checks above have not been run as part of this plan.
+The integration directory currently has no tests. `make test-integration` collected zero tests: pytest exited 5 and Make exited 2. The CI workflow explicitly treats pytest's empty-suite exit as success. This is an observed absence of integration coverage, rather than a passing integration test suite.
 
 ## 4. Inputs & outputs
 
@@ -71,7 +72,7 @@ The integration directory currently has no tests. Pytest's exit code 5 in that c
 - **Dependency differences:** The local environment uses Python 3.13.7 and Passlib 1.9.5, while CI uses Python 3.11 and dependencies specified with lower bounds. The linked stable Passlib reference is version 1.7.4. Assert observable return values and exception classes instead of exact library error text, and verify the PR's actual CI results.
 - **Validation side effects:** `make check` includes Black, which writes formatting changes. Inspect its diff and keep the contribution focused on the issue. Preserve unrelated seeded defects and their suppressions.
 
-There are no current blockers to reproducing the issue or starting implementation. Final PR/CI results and the additional caller coverage remain to be verified during Unit 9.
+All helper and caller regression cases pass locally. There are no implementation blockers; final PR/CI results remain to be verified during Unit 9.
 
 ## 6. Edge cases
 
