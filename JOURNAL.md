@@ -47,16 +47,16 @@ I will submit the pull request.
 
 ### Check-in 2 (end of week)
 
-**PR link:** [link to your submitted pull request]
+**PR link:** (https://github.com/codepath/pathreview-ai201-fa26-howard/pull/111)
 
-**Branch:** [the branch name you worked on, e.g. `fix/123-short-description`]
+**Branch:** fix/75-api-disagreement-in-docs
 
 **What you built:**
-[1–3 sentences summarizing what your fix does and how it works]
+The documents align on API instructions, and provide information onto the specific choices.
 
 **Tests added or updated:**
-[Which test files did you touch? What do they cover?]
+N/A
 
-**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+**Self-review confirmation:** [X] make check passes  [X] make test-unit passes
 
-**Draft PR feedback received from:** [name or Slack handle, or "none"]
+**Draft PR feedback received from:** none
