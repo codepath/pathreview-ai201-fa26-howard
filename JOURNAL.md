@@ -25,7 +25,7 @@ documentation, so API behavior stays the same.
 
 **Setup confirmation:** [x] App runs locally at localhost:5173 (native Postgres 16 on port 5433 instead of Docker)
 
-**Cohort ledger:** [ ] Issue added to cohort ledger
+**Cohort ledger:** [x] Issue added to cohort ledger
 
 ### Selection notes — "Is this right for me?" checklist
 
