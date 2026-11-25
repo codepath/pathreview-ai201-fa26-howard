@@ -126,3 +126,27 @@ Run from the repository root:
 The test is intentionally marked `xfail(strict=True)` for issue #72 / manifest H-05. `--runxfail` exposes the failure without editing the test marker. Running the entire security test file normally produced **24 passed, 1 xfailed**, with exit code **0**.
 
 The relevant helper, its `login()` caller in `api/routes/auth.py`, the user model and schemas, and nearby security tests were inspected. The helper lets Passlib's exception escape; the login route then reaches its generic HTTP 500 handler. The intended behavior is for malformed stored hashes to return `False` so the route uses its existing HTTP 401 invalid-credentials response.
+
+**Reproduction commit:** [18fcce3 — reproduce issue #72](https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/commit/18fcce31ea1b7e84ea5951d603830b2a7af1a491). This commit records the evidence before introduction of the solution plan.
+
+### Solution plan
+
+[PLAN.md](PLAN.md) contains all six required sections: Understand, Map, Plan, Inputs & outputs, Risks & unknowns, and Edge cases. It identifies the helper and caller, gives five ordered tasks, defines the intended verification and HTTP results, and covers concrete malformed-hash, valid-password, and error-propagation cases.
+
+The plan is introduced in a separate commit after the reproduction evidence. Its proposed exception boundary follows the observed difference between an unrecognized hash (`UnknownHashError`) and a recognized but truncated bcrypt value (`ValueError`). Implementation and the issue-specific marker removal are planned for Unit 9.
+
+### Blockers and open questions
+
+**No current blockers for Unit 8.** Reproduction runs with the installed local dependencies and requires no database changes, LLM calls, or external accounts.
+
+Unit 9 will verify the planned exception boundary, add the isolated login-route coverage, and confirm the required local checks and CI results. The existing long-password and whitespace tests are controls for preserving behavior. The plan records the local/CI dependency differences and how to keep unrelated backend failures visible.
+
+### Submission status
+
+**Unit 8 course submission: pending.** Submit the same working-branch URL used for Unit 7:
+
+https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/tree/fix/72-malformed-password-hashes
+
+### AI assistance
+
+Codex ran the reproduction and security baseline, investigated the additional malformed-hash cases, checked Passlib's documentation against the installed exception hierarchy, and drafted the evidence and six-section plan. All reported test outcomes above were observed during this Unit 8 work.
