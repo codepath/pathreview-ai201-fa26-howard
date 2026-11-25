@@ -246,7 +246,3 @@ I am most proud of completing a focused fix with evidence at both the password-h
 ### AI assistance and submission status
 
 Codex helped draft these reflections from the setup failures, code paths, test results, commits, and GitHub status recorded during this work.
-
-**Unit 10 course submission:** Pending. Course submissions and the Howard ledger update remain for the final submission step. Submit the same working-branch URL separately for Units 7, 8, 9, and 10:
-
-https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/tree/fix/72-malformed-password-hashes
