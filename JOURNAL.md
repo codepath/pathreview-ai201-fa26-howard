@@ -100,3 +100,29 @@ Row values to enter in the **Howard** tab: **Shreejay Subedi**, **shreejaysubedi
 ### AI assistance
 
 Codex inspected the repository and live issue, helped configure and verify the local environment, and helped draft this journal from the observed results. 
+
+## Unit 8 — Reproduction and solution plan
+
+- **Work date:** November 25, 2026 (America/New_York)
+- **Issue:** [#72](https://github.com/codepath/pathreview-ai201-fa26-howard/issues/72)
+- **Branch:** `fix/72-malformed-password-hashes`
+
+### Reproduction summary
+
+Running the existing malformed-hash test with `--runxfail` reproduced `UnknownHashError` escaping from `core/security.py::verify_password()` instead of returning `False`. A separate check of a truncated bcrypt-formatted string raised `ValueError`, identifying a second malformed-hash path to include in the solution plan.
+
+### Reproduction evidence
+
+[Recorded commands, observed output, exit codes, and boundary cases](docs/evidence/unit8-reproduction.txt)
+
+Run from the repository root:
+
+```bash
+.venv/bin/pytest tests/unit/test_security.py::TestSecurity::test_verify_with_wrong_hash_format -q --runxfail --tb=short --disable-warnings
+```
+
+**Observed:** exit code **1**, with `passlib.exc.UnknownHashError: hash could not be identified` at `core/security.py:37`. The input is the synthetic string `not_a_valid_bcrypt_hash`; the required result is `False`.
+
+The test is intentionally marked `xfail(strict=True)` for issue #72 / manifest H-05. `--runxfail` exposes the failure without editing the test marker. Running the entire security test file normally produced **24 passed, 1 xfailed**, with exit code **0**.
+
+The relevant helper, its `login()` caller in `api/routes/auth.py`, the user model and schemas, and nearby security tests were inspected. The helper lets Passlib's exception escape; the login route then reaches its generic HTTP 500 handler. The intended behavior is for malformed stored hashes to return `False` so the route uses its existing HTTP 401 invalid-credentials response.

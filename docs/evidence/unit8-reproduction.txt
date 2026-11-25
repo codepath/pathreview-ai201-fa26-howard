@@ -1,0 +1,60 @@
+PathReview issue #72: malformed stored password hash
+Work date: November 25, 2026 (America/New_York)
+Branch: fix/72-malformed-password-hashes
+Reproduced against commit: 70a168d (Unit 7 setup; no issue fix applied)
+Environment: Python 3.13.7, Passlib 1.9.5
+
+REPRODUCTION
+
+From the repository root, after installing the project in .venv:
+
+.venv/bin/pytest tests/unit/test_security.py::TestSecurity::test_verify_with_wrong_hash_format -q --runxfail --tb=short --disable-warnings
+
+Input: verify_password("password", "not_a_valid_bcrypt_hash")
+Expected result: False
+Observed result: passlib.exc.UnknownHashError: hash could not be identified
+Observed command exit code: 1
+
+Excerpt from the observed pytest output:
+
+_______________ TestSecurity.test_verify_with_wrong_hash_format ________________
+tests/unit/test_security.py:227: in test_verify_with_wrong_hash_format
+    result = verify_password("password", wrong_hash)
+core/security.py:37: in verify_password
+    return bool(pwd_context.verify(plain_password, hashed_password))
+E   passlib.exc.UnknownHashError: hash could not be identified
+FAILED tests/unit/test_security.py::TestSecurity::test_verify_with_wrong_hash_format
+1 failed, 1 warning in 0.23s
+
+WHY --runxfail IS USED
+
+The existing test carries a strict xfail marker for issue #72 / manifest H-05.
+--runxfail runs the existing assertion as an ordinary test for this reproduction.
+The marker and production code were left intact during Unit 8.
+
+SECURITY TEST BASELINE
+
+.venv/bin/pytest tests/unit/test_security.py -q --tb=short --disable-warnings
+
+Observed result: 24 passed, 1 xfailed, 1 warning in 4.26s
+Observed command exit code: 0
+
+ADDITIONAL BOUNDARY INVESTIGATION
+
+Called the existing verify_password("password", stored_hash) for each value:
+
+stored_hash = "not_a_valid_bcrypt_hash"
+Observed: UnknownHashError: hash could not be identified
+
+stored_hash = ""
+Observed: UnknownHashError: hash could not be identified
+
+stored_hash = "$2b$12$invalid"
+Observed: ValueError: salt too small (bcrypt requires exactly 22 chars)
+
+stored_hash = "5f4dcc3b5aa765d61d8327deb882cf99"
+Observed: UnknownHashError: hash could not be identified
+
+The installed UnknownHashError inherits from ValueError. A recognized bcrypt
+prefix with invalid contents can raise ValueError directly, so the plan must
+cover both failure paths. All values here are synthetic test data.
