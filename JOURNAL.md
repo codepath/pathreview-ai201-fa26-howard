@@ -74,6 +74,28 @@ documentation, so API behavior stays the same.
 
 ## Unit 8 — Reproduction & solution planning
 
+**Reproduction commit link:** https://github.com/corr18/pathreview-ai201-fa26-howard/commit/0bfbbc61a196169c8a9cce581eafb7061a0a5f8f
+
+**Reproduction summary:**
+I compared `docs/API.md` on `main` with the routes registered in `api/main.py`
+and `api/routes/*.py`. The doc has zero `curl` examples, leaves out 3 of the 12
+routes (`GET /`, `PUT /profiles/{id}`, `GET /reviews/{id}/status`), and never
+explains the form-encoded login, multipart profile upload, or bearer-token
+requirements. I also found that `GET /health` currently always returns 503
+because of #61 and #62.
+
+**PLAN.md link:** https://github.com/corr18/pathreview-ai201-fa26-howard/blob/docs/47-api-curl-examples/PLAN.md
+
+**Walkthrough video (recommended):** Not recorded.
+
+**Blockers or open questions:**
+- I still need Docker (or Colima) running locally so I can run every example
+  against a live server (PLAN.md step 5).
+- Should `jq` be added to the prerequisites in `docs/SETUP.md`, or should the
+  examples include a fallback that doesn't need it?
+- How should the docs handle the `/health` 503 if #61 and #62 haven't merged
+  by the time I open my PR?
+
 ### Reproduction steps (issue #47)
 
 Issue #47 is a documentation gap, so I reproduced it by checking what
