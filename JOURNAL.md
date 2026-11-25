@@ -150,3 +150,21 @@ https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/tree/fix/72-malfo
 ### AI assistance
 
 Codex ran the reproduction and security baseline, investigated the additional malformed-hash cases, checked Passlib's documentation against the installed exception hierarchy, and drafted the evidence and six-section plan. All reported test outcomes above were observed during this Unit 8 work.
+
+## Unit 9 — Implementation and pull request
+
+### Check-in 1 — Regression coverage before the fix
+
+**Work date:** November 25, 2026 (America/New_York)
+
+**Completed plan task 1:** Expanded `tests/unit/test_security.py::TestSecurity.test_verify_with_wrong_hash_format` into four cases: an unrecognized string, an empty hash, an unsupported hash-like string, and truncated bcrypt. Before changing the helper, ran:
+
+```bash
+.venv/bin/pytest tests/unit/test_security.py::TestSecurity::test_verify_with_wrong_hash_format -q --runxfail --tb=short --disable-warnings
+```
+
+**Observed:** all **4 cases failed**, with exit code **1**. Three raised `UnknownHashError`; the truncated bcrypt case raised `ValueError`. The issue-specific `xfail` marker is still present at this check-in, so the evidence establishes the failing behavior before implementation.
+
+**Next steps:** Complete plan tasks 2–5: handle the verification `ValueError` family, activate the regression cases and test the error boundary, add isolated login-route coverage, then run the required checks and open the PR.
+
+**Blockers:** None at this check-in. The local branch matches the remote, and the Howard upstream has no newer source commits to incorporate.

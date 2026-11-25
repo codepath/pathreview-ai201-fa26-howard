@@ -219,14 +219,19 @@ class TestSecurity:
         strict=True,
         reason="issue #72 (manifest H-05): password verify raises UnknownHashError instead of returning False",
     )
-    def test_verify_with_wrong_hash_format(self):
-        """Test verify_password with non-bcrypt hash."""
-        wrong_hash = "not_a_valid_bcrypt_hash"
-
-        # Should handle gracefully, return False
-        result = verify_password("password", wrong_hash)
-
-        assert result is False
+    @pytest.mark.parametrize(
+        "stored_hash",
+        [
+            "not_a_valid_bcrypt_hash",
+            "",
+            "5f4dcc3b5aa765d61d8327deb882cf99",
+            "$2b$12$invalid",
+        ],
+        ids=["unrecognized", "empty", "unsupported", "truncated-bcrypt"],
+    )
+    def test_verify_with_wrong_hash_format(self, stored_hash):
+        """Reject malformed stored hashes without raising an exception."""
+        assert verify_password("password", stored_hash) is False
 
     def test_token_tampering_detection(self):
         """Test that tampered token is rejected."""
