@@ -9,7 +9,7 @@
 **Problem summary:**
 This is an issue occurring in the docs specifically. README.md and .env.example have conflicting information about the LLM API to be used. This is an issue because the specific API is important to how to entire codebase is set up and how the code is written. Conflicting information will confuse developers involved. A successful fix will be to have the correct API listed in both documents.
 
-**Branch name:** fix-75-api-disagreement-in-docs
+**Branch name:** fix/75-api-disagreement-in-docs
 
 **Setup confirmation:** [X] App runs locally at localhost:5173
 
@@ -18,15 +18,45 @@ This is an issue occurring in the docs specifically. README.md and .env.example 
 ## Unit 8 - Issue Reproduction and Fix Planning
 
 **Issue Reproduction:** 
-In Line 27 of README.md there is a comment that says to add OPENROUTER_API_KEY to the .env file. This contrasts from line 17 of .env.example which lists the options as "mock" (default, no API key needed) and "openai". These are differing instructions.
+In Line 24 of README.md there is a comment that says to add OPENROUTER_API_KEY to the .env file. This contrasts from line 17 of .env.example which lists the options as "mock" (default, no API key needed) and "openai". These are differing instructions.
 
 **Reproduction commit link:** (https://github.com/codepath/pathreview-ai201-fa26-howard/commit/b5ccd0f0a2e7793188f397db61e3b2a3ca687fce)
 
 **Reproduction summary:**
 I went into the docs listed in the issue link, and found exactly where the issue was located.
 
-**PLAN.md link:** ](https://github.com/selmaapara224/pathreview-ai201-fa26-howard/blob/fix-75-api-docs/PLAN.md)
+**PLAN.md link:** (https://github.com/selmaapara224/pathreview-ai201-fa26-howard/blob/fix-75-api-docs/PLAN.md)
 
 
 **Blockers or open questions:**
 I need to ensure that I pick the correct API to list in both docs.
+
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 
+
+**Current progress:**
+I used Claude to understand how the codebase flowed and which API instruction was correct. I have edited README.md, .env.example, as well as SETUP.md which was not orignally anticipated.
+
+**Next steps:**
+I will submit the pull request.
+
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** [link to your submitted pull request]
+
+**Branch:** [the branch name you worked on, e.g. `fix/123-short-description`]
+
+**What you built:**
+[1–3 sentences summarizing what your fix does and how it works]
+
+**Tests added or updated:**
+[Which test files did you touch? What do they cover?]
+
+**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+
+**Draft PR feedback received from:** [name or Slack handle, or "none"]
