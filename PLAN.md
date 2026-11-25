@@ -73,12 +73,19 @@ See the reproduction notes in `JOURNAL.md` (Unit 8).
    `git diff --check` and `make lint`. *Done when every example returns the
    expected status.*
 
-> Status: a first draft covering steps 1–3 is already committed on this branch
-> (`13b7061`). Steps 4 and 5 are still to do in Unit 9, along with two fixes
-> to the draft. First, add `jq` as a prerequisite. Second, move the
-> `DELETE /profiles` example after the review examples: right now it sits at
-> `docs/API.md:119`, before `POST /reviews` at line 134, so running the
-> commands in order deletes the profile the review examples need.
+> Status (Unit 9): all five steps are done.
+>
+> - Steps 1–3 were in the first draft (`13b7061`).
+> - Step 4 and the two draft fixes are in `1bbfa75`. The `DELETE /profiles`
+>   example now comes last, in a "Cleaning up" section. `jq` is documented in
+>   `docs/API.md` with install commands and a manual fallback. I kept that
+>   change out of `SETUP.md` to keep the scope narrow.
+> - Step 5: I ran every example in order against a local server (native
+>   Postgres, mock LLM). All 12 routes returned the expected status: `200`
+>   from each read and create, `204` from the delete, and `503` from
+>   `/health`, as noted in the doc.
+> - I added `tests/unit/test_api_docs.py` (`5752dd6`) so the doc can't drift
+>   from the registered routes again.
 
 ### Inputs & outputs
 
@@ -112,9 +119,9 @@ See the reproduction notes in `JOURNAL.md` (Unit 8).
   ingestion may fail and leave the review `failed` instead of `completed`. I'll
   note the stack I tested on in the PR description.
 - **`jq` dependency.** The token- and ID-capturing commands pipe into `jq`,
-  which isn't in the prerequisites table in `docs/SETUP.md`. Open question: do I
-  add `jq` there, or offer a fallback with no dependencies (copy the token
-  manually)? I need to decide whether touching `SETUP.md` is in scope.
+  which isn't in the prerequisites table in `docs/SETUP.md`. *Resolved:* I
+  documented `jq`, with a copy-by-hand fallback, in `docs/API.md` itself and
+  left `SETUP.md` untouched, to keep this PR to one doc.
 - **Review flow timing.** `POST /reviews` returns `status="pending"` and runs
   ingestion and the agent as a background task (`api/routes/reviews.py:22`).
   Without a valid `OPENROUTER_API_KEY`, the review may stay pending or fail. The

@@ -151,3 +151,32 @@ registers.
   happens because of `db.execute("SELECT 1")` with a raw string (issue #61) and
   `settings.redis_host`, which doesn't exist (issue #62), both in
   `api/routes/health.py`. A health `curl` example has to account for this.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+All five PLAN.md sub-tasks are done:
+- Steps 1–3 (route inventory, setup block, one `curl` example per route) were
+  already in my first draft.
+- Step 4: in `1bbfa75` I documented the known `/health` 503 (#61, #62). I also
+  fixed the two draft problems I found in Unit 8. The `DELETE /profiles`
+  example now comes last, because deleting a profile also deletes its reviews,
+  so the review examples returned `404` after it. `jq` is now documented, with
+  a fallback for anyone who doesn't have it.
+- Step 5: I ran every example in order against my local server. All 12 routes
+  returned the expected status codes.
+- I added `tests/unit/test_api_docs.py`. It checks `docs/API.md` against the
+  app's OpenAPI schema, so a new or renamed route without a doc example fails
+  the test. I confirmed that it fails against `main`'s original doc and
+  against my old draft's ordering.
+
+**Next steps:**
+- Open a draft PR and ask for peer review in the cohort Slack channel.
+- Address the feedback, confirm all five CI jobs are green on the PR, then mark
+  it ready for review.
+
+**Blockers:**
+None. One thing to watch: #37 (PR #107) also edits `docs/API.md`, so whichever
+merges second will need to resolve a merge conflict.
