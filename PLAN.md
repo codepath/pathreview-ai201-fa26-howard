@@ -22,17 +22,11 @@ To fix the issue, my plan is to:
 5) Test commands locally to ensure they work as expected. 
 
 ### Inputs & outputs
-What does your fix take as input? What should it produce or change?
-
-The fix should produce curl commands that should be visible and easy to find within the documentation, and also be found when you run Linux commands. 
+The inputs will include the existing API endpoints, their request requirements, and the project's local development environment. The expected output is updated documentation containing visible, understandable, and functional curl examples that allow contributors to interact with and test the API endpoints.
 
 
 ### Risks & unknowns
-What could go wrong? What are you still unsure about?
-
-Things that can go wrong are using unclear or "bad" curl commands that can be confusing for collaborators.  
+One potential risk is writing curl commands with incorrect URLs, headers, authentication details, or request bodies. This could cause confusion for contributors or result in commands that do not work. I will need to verify each example against the actual API implementation before adding it to the documentation.
 
 ### Edge cases
-What inputs or states should your fix handle gracefully?
-
-My fix should be visible and easy to understand for those who are looking at this database for the first time. 
+The examples should account for endpoints that require authentication, different HTTP methods, request bodies, and query parameters. They should also be easy to understand for contributors who may be interacting with the PathReview API for the first time.
