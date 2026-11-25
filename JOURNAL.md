@@ -99,4 +99,4 @@ Row values to enter in the **Howard** tab: **Shreejay Subedi**, **shreejaysubedi
 
 ### AI assistance
 
-Codex inspected the repository and live issue, helped configure and verify the local environment, posted the approved claim comment, and drafted this journal from the observed results. The initial suggestion to skip an already claimed issue was corrected after the course brief clarified that claims are non-exclusive. Issue #72 was chosen for its focused scope and smaller stated estimate.
+Codex inspected the repository and live issue, helped configure and verify the local environment, and helped draft this journal from the observed results. 
