@@ -19,15 +19,16 @@ The project's API documentation is missing example curl commands that developers
 
 ## Unit 8 — Reproduction & solution planning
 
-**Reproduction commit link:** [link to commit documenting the reproduced issue]
+**Reproduction commit link:** (https://github.com/palston20/pathreview-ai201-fa26-howard/commit/0e8bcc155682abf2f50ef703416fbb33f62972af)
 
 **Reproduction summary:**
-Since this was a documentation issue, I wanted to prove that there were no curl examples listed within the documentation. Using the linux command "grep -in "curl" I was able to check in both the README.md file and also within the docs folder to confirm. 
+Since this was a documentation issue, I wanted to prove that there were no curl commands listed within the documentation. Using the linux command "grep -in "curl" I was able to check in both the README.md file and also within the docs folder to confirm. 
 
-**PLAN.md link:** [link to PLAN.md in your fork]
+**PLAN.md link:** (https://github.com/palston20/pathreview-ai201-fa26-howard/commit/2ff6e70972124889335549e2c4c81113e36d6175)
 
 
 **Blockers or open questions:**
-[Anything you're still uncertain about going into Unit 9, or leave blank]
+I still need to identify and review the API endpoints, including their HTTP methods, required parameters, authentication headers, and request bodies. I plan to use the FastAPI documentation and the existing API code to make sure the curl examples I create are accurate and functional.
+
 
 ------------------------------------------------------------------------------------------
