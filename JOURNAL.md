@@ -168,3 +168,41 @@ Codex ran the reproduction and security baseline, investigated the additional ma
 **Next steps:** Complete plan tasks 2–5: handle the verification `ValueError` family, activate the regression cases and test the error boundary, add isolated login-route coverage, then run the required checks and open the PR.
 
 **Blockers:** None at this check-in. The local branch matches the remote, and the Howard upstream has no newer source commits to incorporate.
+
+### Check-in 2 — Implementation and PR
+
+- **Work date:** November 25, 2026 (America/New_York)
+- **Live PR:** [Howard PathReview #113](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113)
+- **Branch:** `fix/72-malformed-password-hashes`
+- **CI results:** [Live results for lint, typecheck, test-unit, test-integration, and frontend](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks)
+- **Draft feedback source:** none. No external review comments had arrived when this check-in was written.
+
+**What I built:** `verify_password()` now returns `False` when Passlib raises `ValueError`, including both unrecognized hashes and malformed bcrypt strings. The existing login route consequently rejects those credentials with HTTP 401. Valid passwords still authenticate, and unsupported argument types and unexpected backend errors remain visible.
+
+**Plan progress:** Completed tasks 1–4 and task 5's local validation/self-review. The PR includes the required template, `Closes #72`, root-cause explanation, and reproduction/verification instructions. The live PR checks above track CI, which is verified before marking the PR ready for review.
+
+**Exact test files and behaviors:**
+
+- `tests/unit/test_security.py`: four malformed stored hashes return `False`; oversized passwords fail verification; invalid argument types still raise `TypeError`; backend `RuntimeError` propagates. Existing valid-password, incorrect-password, case, salt, whitespace, special-character, empty-password, and 1,000-character controls remain active. Removed only issue #72 / H-05's strict `xfail` marker.
+- `tests/unit/test_auth.py`: four malformed stored hashes return HTTP 401 with the invalid-credentials body and bearer challenge; a matching valid hash produces a token for the synthetic user; an incorrect password remains HTTP 401. These tests use the real verifier with a mocked database dependency.
+
+**Local checks actually run:**
+
+- [x] `make check` — Ruff passed, Black formatted the new auth test, and mypy passed for all 76 source files.
+- [x] `make test-unit` — **388 passed, 52 xfailed**.
+- [x] `.venv/bin/pytest tests/unit/test_security.py tests/unit/test_auth.py -q --tb=short` — **37 passed**.
+- [x] `cd frontend && npm test -- --run` — **18 passed**.
+
+`make test-integration` collected **0 tests**. Pytest exited **5** and Make exited **2**; `.github/workflows/ci.yml` already treats an empty integration suite as success. This records the command's actual result and does not claim integration-test coverage.
+
+**Self-review:** Read the entire change set and checked formatting/whitespace. The production change is limited to `core/security.py`; the other changes are focused tests and the course documentation/evidence. No unrelated seeded markers or type-checking suppressions were removed.
+
+**Blockers:** No implementation or local-test blockers. The PR's live checks are the source for CI status, including any maintainer approval needed for fork workflows.
+
+**Ledger update:** Pending. Add PR #113 and its status to the existing Howard ledger row when completing the submission steps.
+
+**Course submission:** Deferred until the end, as requested. The submission URL remains:
+
+https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/tree/fix/72-malformed-password-hashes
+
+**AI assistance:** Codex helped expand and run the regression cases before the fix, implement the narrow exception handler, add the isolated login-route tests, run the recorded checks, update the plan, and prepare the PR and check-ins. Both check-ins record work performed on November 25 in its actual sequence.

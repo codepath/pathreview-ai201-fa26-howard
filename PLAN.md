@@ -3,8 +3,9 @@
 - **Issue:** [Malformed stored password hashes raise instead of returning False](https://github.com/codepath/pathreview-ai201-fa26-howard/issues/72)
 - **Branch:** `fix/72-malformed-password-hashes`
 - **Prepared:** November 25, 2026 (America/New_York)
-- **Stage:** Unit 9. Implementation and local validation are complete; PR CI is pending.
-- **Execution status:** Tasks 1–4 below are complete. The 37 affected tests pass, `make check` passes, the unit suite reports 388 passed / 52 xfailed, and all 18 frontend tests pass. Task 5's PR/CI verification remains open.
+- **Stage:** Unit 9. Implementation and local validation are complete.
+- **Pull request:** [Howard PathReview #113](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113)
+- **Execution status:** Tasks 1–4 below, task 5's local validation, and self-review are complete. The 37 affected tests pass, `make check` passes, the unit suite reports 388 passed / 52 xfailed, and all 18 frontend tests pass. Current results for the five CI jobs are available in the [PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks).
 - **Reproduction commit:** [18fcce3](https://github.com/shreejaysubedi/pathreview-ai201-fa26-howard/commit/18fcce31ea1b7e84ea5951d603830b2a7af1a491)
 - **Evidence:** [Commands and observed output](docs/evidence/unit8-reproduction.txt)
 
@@ -12,7 +13,7 @@
 
 Before the fix, `core/security.py::verify_password()` immediately returned `bool(pwd_context.verify(...))`. If Passlib could not identify or parse the stored hash, it raised before `bool()` could produce a result. The helper did not catch that error, so `api/routes/auth.py::login()` reached its generic exception handler and responded with HTTP 500. The implementation now catches `ValueError` around that comparison and returns `False`.
 
-The existing `TestSecurity.test_verify_with_wrong_hash_format` expects `False` for `not_a_valid_bcrypt_hash`, but carries a strict `xfail` marker for issue #72 / manifest H-05. Running it with `--runxfail` reproduced `UnknownHashError` and exit code 1. The unchanged security test file otherwise reports 24 passed and 1 xfailed.
+At the reproduction stage, `TestSecurity.test_verify_with_wrong_hash_format` expected `False` for `not_a_valid_bcrypt_hash`, but carried a strict `xfail` marker for issue #72 / manifest H-05. Running it with `--runxfail` reproduced `UnknownHashError` and exit code 1. The unchanged security test file then reported 24 passed and 1 xfailed. The implementation expands that case to four hashes and removes its marker.
 
 The required outcome is a failed verification (`False`) for malformed stored hash strings. Valid bcrypt hashes must continue to return `True` for the matching password and `False` for an incorrect password. The login route should consequently use its existing HTTP 401 invalid-credentials response.
 
@@ -41,7 +42,7 @@ The relevant path is: login form data, user lookup, `verify_password()`, Passlib
 Commands used for local validation:
 
 ```bash
-.venv/bin/pytest tests/unit/test_security.py tests/unit/test_auth.py -v --tb=short
+.venv/bin/pytest tests/unit/test_security.py tests/unit/test_auth.py -q --tb=short
 make check
 make test-unit
 make test-integration
@@ -60,7 +61,7 @@ The integration directory currently has no tests. `make test-integration` collec
 
 **Caller result:** A user whose stored hash is malformed receives the existing HTTP 401 invalid-credentials response. A matching valid hash still allows normal token creation. Route behavior will be verified with the real helper and synthetic database results.
 
-**Reproduction input and output:** `verify_password("password", "not_a_valid_bcrypt_hash")` currently raises `UnknownHashError`; after implementation it must return exactly `False`.
+**Reproduction input and output:** `verify_password("password", "not_a_valid_bcrypt_hash")` raised `UnknownHashError` before the fix and now returns exactly `False`.
 
 ## 5. Risks & unknowns
 
@@ -72,7 +73,7 @@ The integration directory currently has no tests. `make test-integration` collec
 - **Dependency differences:** The local environment uses Python 3.13.7 and Passlib 1.9.5, while CI uses Python 3.11 and dependencies specified with lower bounds. The linked stable Passlib reference is version 1.7.4. Assert observable return values and exception classes instead of exact library error text, and verify the PR's actual CI results.
 - **Validation side effects:** `make check` includes Black, which writes formatting changes. Inspect its diff and keep the contribution focused on the issue. Preserve unrelated seeded defects and their suppressions.
 
-All helper and caller regression cases pass locally. There are no implementation blockers; final PR/CI results remain to be verified during Unit 9.
+All helper and caller regression cases pass locally. There are no implementation blockers. The [PR checks](https://github.com/codepath/pathreview-ai201-fa26-howard/pull/113/checks) provide the current CI results, and the PR description records verification before the PR is marked ready for review.
 
 ## 6. Edge cases
 
