@@ -43,3 +43,28 @@ ZeroDivisionError: division by zero
 ```
 
 The same crash happens with `KeywordSearcher().index([{"text": ""}])`. The divisor in rank-bm25 is `len(self.idf)`, which is the number of distinct words. It is not the number of documents. So any corpus with zero tokens crashes, even when the list of chunks is not empty. The existing `test_empty_index` test (xfail, H-01) covers only the empty-list case. I added two strict-xfail tests for the other cases I found: whitespace-only chunks, and re-indexing a populated searcher with `[]`.
+
+**Reproduction commit link:** https://github.com/joshuadonatien/pathreview-ai201-fa26-howard/commit/5a80d87
+
+**Reproduction summary:**
+I called `KeywordSearcher().index([])` from the project venv and got `ZeroDivisionError: division by zero` from `rank_bm25._calc_idf`, which divides by the vocabulary size. Chunks with only empty or whitespace text crash the same way. I recorded this with two new strict-xfail tests next to the existing H-01 test.
+
+**PLAN.md link:** https://github.com/joshuadonatien/pathreview-ai201-fa26-howard/blob/fix/68-keyword-search-empty-index/PLAN.md
+
+**Walkthrough video (recommended):** Not recorded.
+
+**Blockers or open questions:**
+PR #74 from another student also targets #68. My plan covers the wider empty-vocabulary case and not only `chunks == []`. Issue #6 (`HybridRetriever` never calls `index()`) is a separate bug that I am leaving out of scope.
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+PLAN.md sub-task 1 is done: I reproduced the crash locally and pinned it down with tests (commit 5a80d87). There are three strict-xfail tests: `test_empty_index` (H-01), `test_index_chunks_without_tokens` and `test_reindex_with_empty_corpus_clears_previous_index`. I also checked the "mixed corpus" risk from PLAN.md by hand. BM25 indexes it fine and the token-less chunks score 0.0, so that case needs no code change.
+
+**Next steps:**
+Sub-tasks 2–5: add the `if not any(tokenized_corpus)` guard to `KeywordSearcher.index()`, reset `self.bm25` to `None` on that path, remove the three xfail markers, run `make check` and `make test-unit`, then fill in the template on my open PR #87.
+
+**Blockers:**
+None.
