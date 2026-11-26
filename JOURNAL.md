@@ -68,3 +68,52 @@ Sub-tasks 2–5: add the `if not any(tokenized_corpus)` guard to `KeywordSearche
 
 **Blockers:**
 None.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** https://github.com/codepath/pathreview-ai201-fa26-howard/pull/87
+
+**Branch:** `fix/68-keyword-search-empty-index`
+
+**What you built:**
+`KeywordSearcher.index()` in `rag/retriever/keyword_search.py` now checks for an empty vocabulary (`if not any(tokenized_corpus)`) before calling `BM25Okapi`. When that check is true it clears `self.bm25`, logs `keyword_index_empty` and returns, so `search()` returns `[]` instead of the index crashing with `ZeroDivisionError`. This handles an empty chunk list, chunks with only whitespace text, and re-indexing a populated searcher with an empty corpus.
+
+**Tests added or updated:**
+`tests/unit/test_keyword_search.py`. I removed the strict xfail marker from `test_empty_index` (manifest H-01). It now passes and checks that `index([])` followed by `search()` returns `[]`. I added `test_index_chunks_without_tokens`, which checks that indexing chunks whose text is `""` or `"   \n\t"` doesn't raise and that search returns `[]`. I also added `test_reindex_with_empty_corpus_clears_previous_index`, which checks that after indexing real chunks and then `index([])`, search returns `[]` and not stale results from the old index. Unit suite: 378 passed, 52 xfailed (was 375 passed, 53 xfailed).
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No review has come in on PR #87 yet. No reviewer or maintainer comments, and I didn't get draft feedback in Slack before submitting.
+
+**How you responded:**
+
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The bug was bigger than its title. Issue #68 says "when the index is empty," so my first idea was an `if not chunks: return` guard. When I reproduced it, the traceback pointed into `rank_bm25._calc_idf`, which divides by `len(self.idf)`. That's the number of distinct words, not the number of documents. So `index([{"text": "   "}])` crashes too, and the obvious one-line fix would have left a real bug in place. Keeping up with the process was also harder than the code. I opened PR #87 back in Unit 7 with only my journal in it and an empty template, then let it sit, so a lot of the planning, fixing and documenting got squeezed together at the end.
+
+**What did you learn about working in a large codebase?**
+Most of the time went to reading code I wasn't going to change. Before I knew my fix was safe, I had to check that `HybridRetriever.retrieve()` in `rag/retriever/hybrid.py` is the only caller of `search()` and that it handles an empty list (`max(..., default=1.0)`). There I found a comment marking a *different* seeded bug (#6: it fetches chunks and never indexes them) that I had to deliberately leave alone. In my own projects I would just have fixed it. Here, fixing it would collide with someone else's issue and make my PR harder to review. I also learned to trust the repo's conventions over my own habits: Conventional Commit scopes like `fix(rag):`, the strict-xfail contract, and the CI comment that explains why `make test-integration` exits 5 locally but is green in CI.
+
+**How did AI tools help — and where did they fall short?**
+I used Claude Code for a lot of this: navigating the repo, running the reproduction and drafting PLAN.md and the PR description. It was most useful for going one layer deeper than the issue. It opened the installed `rank_bm25.py` in the venv, found the exact divide-by-zero line and tested the whitespace-only case, which is how the "empty vocabulary" framing came up. It fell short on judgment calls that depend on context outside the code. It couldn't get me peer feedback in Slack, it didn't know whether an older empty PR should be reused or replaced, and when `make test-integration` failed locally I had to read `.github/workflows/ci.yml` to confirm that exit code 5 was expected and not caused by my change. I also had to check that its claims matched real output (375→378 passed, 53→52 xfailed) and not just accept a summary.
+
+**What would you do differently if you started over?**
+I'd keep the weekly rhythm the course is built around and not batch the work at the end. Reproduce in Unit 8 week, open a real draft PR early in Unit 9, and post it in Slack so a classmate could review it. As it was, "Draft PR feedback received from" is "none," and that's my fault. I also wouldn't open a PR before there's code in it. PR #87 sat open for weeks with only `JOURNAL.md` and a blank template, which is noise for maintainers. Finally, since PR #74 was already open on the same issue, I'd comment on #68 early to coordinate, or pick an unclaimed Tier 1 issue.
+
+**What are you most proud of from this module?**
+I'm most proud of finding the whitespace-only and re-index-to-empty edge cases and writing them up as failing strict-xfail tests *before* writing the fix. The fix is about five lines, but the tests prove it covers the actual root cause (an empty BM25 vocabulary) and not just the symptom in the issue title. That's what sets my PR apart from a `len(chunks) == 0` patch.
