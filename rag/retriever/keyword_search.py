@@ -17,11 +17,22 @@ class KeywordSearcher:
     def index(self, chunks: list[dict]) -> None:
         """Build BM25 index from chunks.
 
+        An empty corpus (no chunks, or chunks whose text has no tokens)
+        clears the index instead of raising, so later searches return [].
+
         Args:
             chunks: List of chunk dicts with 'text' field
         """
         self.chunks = chunks
         tokenized_corpus = [self._tokenize(chunk["text"]) for chunk in chunks]
+
+        # BM25Okapi divides by the vocabulary size, so an empty vocabulary
+        # raises ZeroDivisionError. Skip building it; search() handles None.
+        if not any(tokenized_corpus):
+            self.bm25 = None
+            logger.warning("keyword_index_empty", chunk_count=len(chunks))
+            return
+
         self.bm25 = BM25Okapi(tokenized_corpus)
         logger.info("keyword_index_built", chunk_count=len(chunks))
 
