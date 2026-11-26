@@ -31,7 +31,7 @@ Since this was a documentation issue, I wanted to prove that there were no curl 
 I still need to identify and review the API endpoints, including their HTTP methods, required parameters, authentication headers, and request bodies. I plan to use the FastAPI documentation and the existing API code to make sure the curl examples I create are accurate and functional.
 
 
-------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
 
 ## Unit 9 — Solution building & PR submission
 
@@ -64,3 +64,39 @@ No test files added or modified. Manually tested representative API endpoints us
 - Note: make check did not complete successfully as a combined command in my local environment. However, I ran its individual components separately: Ruff passed, Black completed formatting, and MyPy reported no issues in 76 source files. The unit test suite also passed with 375 passed and 53 expected failures. No application code was changed for this documentation-only issue.
 
 **Draft PR feedback received from:** None 
+
+-----------------------------------------------------------------------------------------------------------
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No review has come in yet. 
+
+**How you responded:**
+N/A
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Even though my issue was documentation-related, I had to go through multiple route files, schemas, and authentication requirements to make sure my cURL examples were accurate, which was something I did not expect. I also underestimated how much time troubleshooting the development environment and running the required checks would take.
+
+**What did you learn about working in a large codebase?**
+Working in someone else's codebase requires a lot more preparation and attention to detail than building something from scratch. I couldn't just make changes based on what I thought would work. I had to understand the existing structure, follow the project's  guidelines, and make sure my work fit the conventions already established by the team.
+
+**How did AI tools help — and where did they fall short?**
+AI tools were especially helpful when navigating unfamiliar files, understanding API routes, troubleshooting errors, and breaking larger tasks into smaller steps. 
+
+However, I still needed to inspect the actual code, test API requests, and review the results myself because AI could sometimes make assumptions about the codebase or suggest steps that didn't match my environment.
+
+
+**What would you do differently if you started over?**
+If I started over, I would probably choose an issue that involved making actual changes to the codebase rather than focusing on documentation so that I could gain more hands-on coding experience. However, I do believe the issue I chose was a good starting point for someone who had never contributed to an open-source project before. It allowed me to become more comfortable navigating an unfamiliar repository, understanding the contribution workflow, and learning how to submit a pull request before taking on a more complex coding issue.
+
+**What are you most proud of from this module?**
+I'm most proud of being able to contribute to an existing project that I didn't originally build. At first, navigating the repository, understanding the backend, and working with GitHub workflows felt overwhelming. However, I was able to investigate an issue, create a plan, make a meaningful documentation contribution, test my examples, and submit a pull request. I'm proud that I pushed through the unfamiliar parts instead of giving up.
