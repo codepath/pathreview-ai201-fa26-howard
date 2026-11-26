@@ -27,3 +27,43 @@ Using FastAPI's TestClient against `api.main:app`, I sent 70 requests to `GET /`
 
 **Blockers or open questions:**
 [Anything you're still uncertain about going into Unit 9, or leave blank]
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+PLAN.md sub-tasks 1–4 are done. I wrote `RateLimitMiddleware` in `api/middleware/rate_limit.py`. It calls `check_rate_limit` with the client IP, sets `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and returns `429` with `Retry-After` once a client is over the limit. I registered it in `api/main.py` inside CORS and exposed the headers to the frontend. It skips `/health`, the docs routes, and CORS preflights. I also wrote 15 unit tests in `tests/unit/test_rate_limit_middleware.py`, and they all pass.
+
+**Next steps:**
+Finish sub-task 5: run `make check` and `make test-unit` and rerun the 70-request reproduction. Then commit following CONTRIBUTING.md, open a draft PR, and ask for peer feedback in Slack.
+
+**Blockers:**
+Docker isn't running locally, so I can't test against a real Redis. I'll verify the 429 behavior with an in-memory Redis stand-in instead. I'm also still unsure whether maintainers want limits per IP or per user.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** [https://github.com/codepath/pathreview-ai201-fa26-howard/pull/114]
+
+**Branch:** `feat/34-Add-an-API-rate-limiting-header`
+
+**What you built:**
+I added `RateLimitMiddleware`, which runs every API request through the existing `RateLimiter.check_rate_limit`, keyed by client IP and `settings.rate_limit_per_minute`. Allowed responses now carry `X-RateLimit-Limit` and `X-RateLimit-Remaining`. Requests over the limit get `429` with `Retry-After` and never reach the route. Rerunning the 70-request reproduction now gives 60 `200`s (remaining counts down from 59 to 0) followed by 10 `429`s.
+
+**Tests added or updated:**
+I added `tests/unit/test_rate_limit_middleware.py` with 15 tests. They cover:
+- headers on allowed responses
+- the countdown to `429`, and the route not running on `429`
+- exempt paths and CORS preflights
+- a limit of 0 turning limiting off
+- the limiter failing (requests are still served)
+- CORS headers on `429`
+- the middleware's registration order in `api/main.py`
+
+No xfail markers were tied to #34.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+**Draft PR feedback received from:** Nathan Dorvelus
