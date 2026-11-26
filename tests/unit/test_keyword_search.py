@@ -142,6 +142,31 @@ class TestKeywordSearcher:
 
         assert results == []
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="issue #68: chunks whose text has no tokens also give BM25 an empty vocabulary",
+    )
+    def test_index_chunks_without_tokens(self, searcher):
+        """Test indexing chunks whose text is empty or whitespace only."""
+        searcher.index([{"id": 1, "text": ""}, {"id": 2, "text": "   \n\t"}])
+        results = searcher.search("python", top_k=10)
+
+        assert results == []
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason="issue #68: re-indexing with an empty corpus raises instead of clearing the index",
+    )
+    def test_reindex_with_empty_corpus_clears_previous_index(self, searcher):
+        """Test that re-indexing with no chunks drops results from the old index."""
+        searcher.index([{"id": 1, "text": "python programming"}])
+        assert searcher.search("python", top_k=10)
+
+        searcher.index([])
+        results = searcher.search("python", top_k=10)
+
+        assert results == []
+
     def test_index_not_called_returns_empty(self, searcher):
         """Test searching without calling index first."""
         results = searcher.search("python", top_k=10)

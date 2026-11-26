@@ -20,3 +20,26 @@ The keyword search in the RAG retriever (`rag/retriever/keyword_search.py`) cras
 **Setup confirmation:** [x] App runs locally at localhost:5173
 
 **Cohort ledger:** [ ] Issue added to cohort ledger
+
+## Unit 8 — Reproduction & solution planning
+
+### Reproduction steps (run locally on branch `fix/68-keyword-search-empty-index`)
+
+```bash
+.venv/bin/python -c "
+from rag.retriever.keyword_search import KeywordSearcher
+KeywordSearcher().index([])
+"
+```
+
+Observed:
+
+```
+File "rag/retriever/keyword_search.py", line 25, in index
+    self.bm25 = BM25Okapi(tokenized_corpus)
+File ".venv/lib/python3.12/site-packages/rank_bm25.py", line 101, in _calc_idf
+    self.average_idf = idf_sum / len(self.idf)
+ZeroDivisionError: division by zero
+```
+
+The same crash happens with `KeywordSearcher().index([{"text": ""}])`. The divisor in rank-bm25 is `len(self.idf)`, which is the number of distinct words. It is not the number of documents. So any corpus with zero tokens crashes, even when the list of chunks is not empty. The existing `test_empty_index` test (xfail, H-01) covers only the empty-list case. I added two strict-xfail tests for the other cases I found: whitespace-only chunks, and re-indexing a populated searcher with `[]`.
