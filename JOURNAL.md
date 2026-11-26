@@ -50,9 +50,9 @@ No major blockers.
 
 ### Check-in 2 (end of week)
 
-**PR link:** [link to your submitted pull request]
+**PR link:** (https://github.com/codepath/pathreview-ai201-fa26-howard/pull/115)
 
-**Branch:** [the branch name you worked on, e.g. `fix/123-short-description`]
+**Branch:** docs/47-api-curl-examples 
 
 **What you built:**
 Updated the API.md file to include curl examples for the PathReview API endpoints. Added examples for authentication, profile management, reviews, and health checks, including the required headers, request bodies, and JWT bearer token authentication instructions. 
