@@ -6,6 +6,18 @@ import pytest
 
 from rag.generator.prompt_templates import PROMPT_TEMPLATES, get_template
 
+# Keep released snapshots intact. Record intentional edits under a new version.
+TEMPLATE_SNAPSHOTS = {
+    ("first_impression", "v1"): "9e7697ff3efd892c82c63ffcc8365690685fb1c29f79d45d84e057b2d0672dd0",
+    ("gaps_feedback", "v1"): "b2673a1a1f018f2f2fdf37b2dfb6b30634404ba7bb2c241cc01b6240b9097950",
+    (
+        "presentation_feedback",
+        "v1",
+    ): "87230b7045d66a1fae7d06e2509c6fae31046e0c4e8d30a3c3d6fe9ad2a7a3d7",
+    ("projects_feedback", "v1"): "7e53575582f45389e4a3e4f93c7c137da629d3a14809e16f746732b9a06740d1",
+    ("skills_feedback", "v1"): "a24d6d717d4f365c28a686f28b3e77f47204c325ce892fc32d68eb82259f6816",
+}
+
 
 @pytest.mark.unit
 class TestPromptTemplates:
@@ -188,20 +200,24 @@ class TestPromptTemplates:
 
         assert template_default == template_v1
 
-    def test_template_snapshot_content_hash(self):
-        """Snapshot test: verify template content hash."""
-        # Create hash of all template content
-        template_content = ""
-        for name in sorted(PROMPT_TEMPLATES.keys()):
-            for version in sorted(PROMPT_TEMPLATES[name].keys()):
-                template_content += PROMPT_TEMPLATES[name][version]
+    @pytest.mark.parametrize(("name", "version"), TEMPLATE_SNAPSHOTS)
+    def test_template_snapshot_content_hash(self, name: str, version: str) -> None:
+        """A released template must keep its exact wording, including whitespace."""
+        prompt = get_template(name, version)
+        actual = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+        message = f"{name}/{version} changed. Add a new version for intentional edits."
+        assert actual == TEMPLATE_SNAPSHOTS[name, version], message
 
-        content_hash = hashlib.md5(template_content.encode()).hexdigest()
-
-        # Expected hash - update if templates intentionally change
-        # This helps detect unintended changes to templates
-        assert isinstance(content_hash, str)
-        assert len(content_hash) == 32  # MD5 hash length
+    def test_every_template_version_has_a_snapshot(self) -> None:
+        """Each registered template version needs a snapshot, and each snapshot a version."""
+        registered = {
+            (name, version) for name, versions in PROMPT_TEMPLATES.items() for version in versions
+        }
+        recorded = set(TEMPLATE_SNAPSHOTS)
+        assert registered == recorded, (
+            f"Versions without a snapshot: {sorted(registered - recorded)}. "
+            f"Snapshots without a version: {sorted(recorded - registered)}."
+        )
 
     def test_skills_feedback_requests_json_format(self):
         """Test skills_feedback requests JSON output."""
