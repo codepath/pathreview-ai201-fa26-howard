@@ -32,3 +32,34 @@ I still need to identify and review the API endpoints, including their HTTP meth
 
 
 ------------------------------------------------------------------------------------------
+
+## Unit 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Completed the issue reproduction and created PLAN.md outlining the implementation steps. Reviewed the API routes, schemas, and authentication middleware to identify the required HTTP methods, endpoints, request formats, and authentication requirements. Mapped out the curl examples needed for the API documentation.
+
+**Next steps:**
+Update docs/API.md with curl examples for the API endpoints, including authentication, profiles, reviews, and health checks. Test the examples against the running API, review the documentation for accuracy,and complete the remaning checks before submitting the pull request 
+
+**Blockers:**
+No major blockers. 
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** [link to your submitted pull request]
+
+**Branch:** [the branch name you worked on, e.g. `fix/123-short-description`]
+
+**What you built:**
+[1–3 sentences summarizing what your fix does and how it works]
+
+**Tests added or updated:**
+[Which test files did you touch? What do they cover?]
+
+**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+
+**Draft PR feedback received from:** [name or Slack handle, or "none"]
