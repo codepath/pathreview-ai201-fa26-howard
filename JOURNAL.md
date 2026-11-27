@@ -60,3 +60,34 @@ N/A
 **Self-review confirmation:** [X] make check passes  [X] make test-unit passes
 
 **Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [X] No — still awaiting review
+
+**Summary of feedback:**
+No review came in yet.
+
+**How you responded:**
+
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+Understanding the full flow of the codebase was a bit more time consuming than I originally anticipated.
+
+**What did you learn about working in a large codebase?**
+When contributing to someone else's code, following the specific conventions across all sectors is crucial. The reviewer may not know how to properly read a commit or another form of important documentation if it does not fit the conventions of the codebase. This is also important when it comes to editing the code. Variable and function naming conventions are important to follow as well.
+
+**How did AI tools help — and where did they fall short?**
+Claude was extrmelely helpful for the issue I fixed, because I did not know which document was correct when it came to the API instructions. Claude explained what each API was for, and that was able to be explained in the comments of the docs as well.
+
+**What would you do differently if you started over?**
+I would have selected a more complicated issue, but this semester has been a bit heavy so my goal was to pick one I could finish quicker.
+
+**What are you most proud of from this module?**
+I'm proud of learning more about different APIs and the process of contributing to a large codebase.
