@@ -87,3 +87,34 @@ I reproduced the bug by running the xfail test with `--runxfail` and by calling 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes (I ran both before opening the PR: `make check` was clean and `make test-unit` gave 379 passed, 52 xfailed, no XPASS. All five CI jobs on the PR are green too.)
 
 **Draft PR feedback received from:** Brian
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+As of 11/26 there are no reviews or comments on PR #83 from reviewers or maintainers. All five CI jobs are still green and the PR is open and marked ready for review. The only feedback so far was the draft PR check from Brian in Slack that I noted in Unit 9.
+
+**How you responded:**
+
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The code fix itself was about five lines. What took longer was everything around it. My first plan was to catch only `UnknownHashError`, because that's what the issue named. When I actually tested different bad hashes, a truncated bcrypt hash like `$2b$12$short` raised a plain `ValueError` instead, so that plan would have left a crash in place. I also didn't expect the strict xfail marker to make CI fail the moment my fix worked. The tooling on Windows was another surprise: `make` wasn't installed, the seed script crashed trying to print a check mark to the console, and the pre-commit black hook got blocked once by Windows Application Control. Finally, I opened my PR against my own fork's `main` by accident (PR #1) before I got the right one into codepath's `main` (PR #83).
+
+**What did you learn about working in a large codebase?**
+In my own projects I just change whatever I want. Here I had to follow conventions that already existed: the commit format from CONTRIBUTING.md, the `structlog.get_logger()` pattern used in `api/routes/health.py`, and the style of the existing tests in `TestSecurity`, which is why I wrote three separate test methods instead of one parametrized test. I also learned to look at the callers before changing something. Reading `api/routes/auth.py` showed me the real impact: the generic `except Exception` turned a bad hash into a 500 instead of a 401. And I learned to keep the diff small. CONTRIBUTING warns against bulk-fixing lint, so I only touched `core/security.py` and its test file.
+
+**How did AI tools help — and where did they fall short?**
+I used Claude Code for this module. It was most useful for the repetitive parts: running the reproduction commands, trying the malformed hashes one by one, running `make check` and `make test-unit` after each step, and filling in the PR template. It also caught the truncated bcrypt case while testing edge cases, which changed my plan. Where it fell short, I had to step in. It couldn't log in to the GitHub CLI for me, because I had to approve that in my browser. It also didn't know my course rubric, so the first submission came back incomplete: the journal fields ran together when GitHub rendered them, and I had submitted a PR link when the portal wanted the branch link. Decisions like catching `ValueError` versus only `UnknownHashError`, and what is safe to log, were mine to check and own.
+
+**What would you do differently if you started over?**
+I would read the full rubric and the portal instructions before starting, so I'd know from day one that I submit the branch URL and how each journal field needs to look. I'd comment on issue #72 to claim it right away, because I never did, and another student later commented that they were working on it. I'd set up my Windows tools (make, gh) in the first week instead of finding out mid-unit. And I'd ask for a review on the PR itself earlier, so there would be feedback on GitHub to respond to this week.
+
+**What are you most proud of from this module?**
+Testing the edge cases before writing the fix. Trying the empty string, the truncated bcrypt hash and the argon2 hash showed me that catching only `UnknownHashError` wasn't enough. Because of that, the fix handles every malformed input I tried, and each case has its own test.
