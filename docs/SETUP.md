@@ -44,7 +44,8 @@ git remote add upstream https://github.com/codepath/pathreview.git
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env and set your OPENROUTER_API_KEY (required for AI features)
+# No API key is needed for local dev (the default LLM_PROVIDER=mock).
+# For real AI reviews, edit .env and set OPENROUTER_API_KEY.
 # All other defaults work for local development
 
 # 3. Start backing services (PostgreSQL + Redis)
