@@ -4,6 +4,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.database import get_db
+from safety.monitoring import SafetyMonitor
 
 log = structlog.get_logger()
 
@@ -43,12 +44,7 @@ async def health_check(db=Depends(get_db)):
 
         from core.config import settings
 
-        r = redis.Redis(
-            host=settings.redis_host,
-            port=settings.redis_port,
-            db=0,
-            decode_responses=True,
-        )
+        r = redis.from_url(settings.redis_url, decode_responses=True)
         r.ping()
         health_status["dependencies"]["redis"] = "healthy"
         log.debug("redis_health_check_passed")
@@ -74,12 +70,16 @@ async def health_check(db=Depends(get_db)):
         health_status["dependencies"]["vector_db"] = "unhealthy"
         health_status["status"] = "unhealthy"
 
-    # Count safety events in last hour (placeholder)
-    try:
-        # This would be populated by actual safety event logging
-        health_status["safety_events_last_hour"] = 0
-    except Exception as exc:
-        log.error("safety_events_check_failed", error=str(exc))
+    # Count safety events in last hour
+    if health_status["dependencies"]["redis"] == "healthy":
+        try:
+            monitor = SafetyMonitor(r)
+            total = 0
+            for event_type in SafetyMonitor.VALID_EVENT_TYPES:
+                total += monitor.get_event_count(event_type)
+            health_status["safety_events_last_hour"] = total
+        except Exception as exc:
+            log.error("safety_events_check_failed", error=str(exc))
 
     # Return 503 if any critical dependency is down
     if health_status["status"] == "unhealthy":
