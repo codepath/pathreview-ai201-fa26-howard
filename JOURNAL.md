@@ -69,3 +69,49 @@ The `/health` Postgres probe now runs `db.execute(text("SELECT 1"))` instead of 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes (377 passed, 53 xfailed)
 
 **Draft PR feedback received from:** none
+
+## Unit 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No review has come in on PR #105 (https://github.com/codepath/pathreview-ai201-fa26-howard/pull/105) as of Nov 28. I checked the PR conversation, inline review comments, and formal reviews, and all three are empty. The PR is still open and unmerged. All five CI checks pass (lint, typecheck, test-unit, test-integration, frontend), so nothing is blocking a reviewer on my side. My draft-PR check-in in Unit 9 also drew no feedback.
+
+**How you responded:**
+There was nothing to reply to, so I made no changes. I re-ran the check and left the PR as submitted. I'll respond promptly if a maintainer comments after this entry. The branch tip matches what the PR points at, so any later feedback can be addressed with a follow-up commit on the same branch.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The fix was one line, `text("SELECT 1")`. Nearly all the difficulty was around that line.
+
+- **Proving the bug.** After I wrapped the probe in `text()`, `/health` still returned 503 because Redis was also unhealthy (issue #62, `settings.redis_host`). I couldn't use the status code as proof of the fix, so I had to check `dependencies.postgres` instead and make my tests patch Redis settings so they didn't depend on #62.
+- **My own test failed.** The strict-xfail test I wrote in Unit 8 patched `core.config.settings.redis_host` with `create=True`, and pydantic rejects that. I replaced it with a patch of the whole `settings` object.
+- **Two different errors for one bug.** The same raw string gives `ObjectNotExecutableError` on a bare connection and `ArgumentError` on a session. I had to learn which one the app actually hits before I could write a fake session that fails the right way.
+- **Waiting.** I had no control over whether anyone would review the PR. A finished, green PR with no reviewer is an odd place to be, and nothing I did in the codebase could change it.
+
+**What did you learn about working in a large codebase?**
+In my own projects I know where everything is and can change anything. Here the first job was finding the smallest region I was allowed to touch.
+
+- **Neighbouring issues.** #62 and #26 edit other lines of the same file, and I had to keep my diff to the Postgres probe lines so rebases stayed clean. A change is only "done" in relation to what else is in flight.
+- **Fixing the right amount.** I saw the Redis problem and didn't fix it, because it was a separate issue. I only confirmed with the course team that it should stay separate. Leaving a visible bug alone felt wrong, but bundling it would have made the PR harder to review.
+- **The suite is part of the codebase.** `make check` and `make test-unit` (377 passed, 53 xfailed) mattered as much as the code. The 53 xfails show that this project records known bugs as tests, and I followed that convention. I pinned the bug with a strict xfail, then removed the marker when I fixed it.
+
+**How did AI tools help — and where did they fall short?**
+I used Claude throughout the module, and it is a co-author on every commit on this branch, from the Unit 7 journal entry through the Unit 9 fix.
+
+- **Where it helped.** It was fastest at reading. It traced `GET /health` to the failing `db.execute("SELECT 1")` in `api/routes/health.py` and explained why SQLAlchemy 2.x rejects a raw string and wants `text()`. It also helped me compare candidate issues against my criteria (one file, unclaimed, verifiable), which is how I ruled out #59 (its fix needs a design choice the issue doesn't specify) and #18 (it spans two modules). It also drafted the Unit 8 strict-xfail test, `tests/unit/test_health.py`, and the PLAN.md.
+- **Where it fell short.** The drafted test did not work when I ran it. It patched `core.config.settings.redis_host` with `create=True`, and pydantic rejects that, so I had to patch the whole `settings` object. The Redis problem (#62) also never showed up in reading the code. I only found it when I ran the stack myself and `/health` still returned 503 after the fix, which is why I now verify through `dependencies.postgres` and not the status code. AI also could not decide whether #62 should stay a separate issue, because that was a question for the course team.
+- **Takeaway.** The code the AI wrote looked right until I executed it, so I treated it as a draft to test against the live stack and `make test-unit`, not as an answer.
+
+**What would you do differently if you started over?**
+- **Ask early about the dependency.** I would have asked about #62 in Unit 7 instead of finding it in Unit 8. I did note the same-file risk in my scope reasoning, but I only discovered the Redis interaction after reproducing the bug against the live stack.
+- **Reproduce before committing to an issue.** Reproducing first would have shown that "fixed" and "returns 200" are different things for this endpoint.
+- **Get review earlier.** I recorded no draft-PR feedback, so the first outside eyes would have been at submission. I would post the plan and draft to the issue thread sooner and ask a named maintainer or cohort peer to look. That would have improved the odds of getting a review.
+
+**What are you most proud of from this module?**
+The strict-xfail test from Unit 8. It pinned the bug in the suite before the fix, so removing the marker in Unit 9 gave direct proof that the change fixed the bug. That reproduction commit made the fix verifiable, and it fit the project's own xfail convention.
